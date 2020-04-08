@@ -48,9 +48,13 @@ class Multi_Kalman_Tracker():
 
     #使用匈牙利算法为轨迹分配点
     def association(self):
+
+        if len(self.clusters)==0:
+            return
+
         #计算得到每条轨迹的预测位置与聚类得到的点的距离
         distance=np.array([])
-        for i in range(len(self.tracks)):
+        for i in range(self.track_num):
             track=self.tracks[i]
             row = np.array([])
             for j in range(len(self.clusters)):
