@@ -51,6 +51,12 @@ def count_people(frame_data):
 def show_people(person_list,fig):
 	show.show2d_new(person_list, fig)
 
+def show_frame(frame_dict):
+	person_list = count_people(frame_dict)
+	show_people(person_list, fig)
+	plt.pause(0.04)
+	plt.clf()
+
 if __name__ == "__main__":
 	filename = './new_points_4_7_v3.json'
 	fig = plt.figure(figsize=(10,10))

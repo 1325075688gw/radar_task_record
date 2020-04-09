@@ -9,21 +9,20 @@ class Multi_Kalman_Tracker():
     d=dict()    #存储当前帧中为轨迹分配的类
     tracks = []  # 所有轨迹
     deleted_tracks=[]   #在这一帧中被删除的轨迹id的集合
+    clusters=[] #当前帧中的点
 
     frame=0 #当前帧号
     successive_times=0  #用于判断是否生成新轨迹
     plength=3
 
     #初始化
-    def __init__(self,G,clusters,min_last_time,frame):
+    def __init__(self,G,min_last_time):
         self.G=G    #同一条轨迹在相邻两帧之间最大的移动距离
         self.measurementMatrix=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])    #H
         self.transitionMatrix=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])  #状态转移矩阵
         self.processNoiseCov=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) * 0.03    #过程噪声矩阵
         self.B=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 0]])    #B
-        self.clusters=clusters  #当前帧数据
         self.min_last_time=min_last_time
-        self.frame=frame    #初始化帧号
 
         self.init_tracks()
 
@@ -48,9 +47,13 @@ class Multi_Kalman_Tracker():
 
     #使用匈牙利算法为轨迹分配点
     def association(self):
+
+        if len(self.clusters)==0:
+            return
+
         #计算得到每条轨迹的预测位置与聚类得到的点的距离
         distance=np.array([])
-        for i in range(len(self.tracks)):
+        for i in range(self.track_num):
             track=self.tracks[i]
             row = np.array([])
             for j in range(len(self.clusters)):
@@ -132,9 +135,13 @@ class Multi_Kalman_Tracker():
         #帧号+1
         self.frame=frame
         self.clusters=clusters
-        self.predict()
-        self.association()
-        self.update()
+        #判断当前是否有轨迹存在
+        if self.track_num==0:
+            self.init_tracks()
+        else:
+            self.predict()
+            self.association()
+            self.update()
 
     '''
         func：
