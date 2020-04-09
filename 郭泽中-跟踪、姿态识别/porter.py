@@ -1,8 +1,6 @@
 from Kalman import Multi_Kalman_Tracker
 import numpy as np
 
-
-
 '''
 test
 '''
@@ -11,7 +9,7 @@ y=[1,2,3]
 z=[1,2,3]
 
 clusters=np.array([x,y,z]).T
-tracker=Multi_Kalman_Tracker(float('inf'),clusters,5,1)
+tracker=Multi_Kalman_Tracker(float('inf'),5,-3,3,7)
 print(tracker.get_each_person_position())
 
 x=[2,3,4,5]

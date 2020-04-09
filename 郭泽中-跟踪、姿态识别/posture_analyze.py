@@ -1,10 +1,9 @@
-import math
 
 #根据身高比例和速度大小，判断人的姿态
 def judge_posture(height_rate, velocity):
     posture_state = 0
     if height_rate > 0.55:
-        if velocity > 0.3:
+        if velocity > 0.1:
             posture_state = 4
         else:
             posture_state = 1
