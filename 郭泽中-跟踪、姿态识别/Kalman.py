@@ -1,28 +1,32 @@
 import numpy as np
 from Track import Track
 from hungary import hungary
-
+import math
 
 #v5.0
 class Multi_Kalman_Tracker():
 
-    d=dict()    #存储当前帧中为轨迹分配的类
-    tracks = []  # 所有轨迹
-    deleted_tracks=[]   #在这一帧中被删除的轨迹id的集合
-    clusters=[] #当前帧中的点
-
-    frame=0 #当前帧号
-    successive_times=0  #用于判断是否生成新轨迹
-    plength=3
-
     #初始化
-    def __init__(self,G,min_last_time):
-        self.G=G    #同一条轨迹在相邻两帧之间最大的移动距离
+    def __init__(self,G,min_last_time,xmin,xmax,ymax):
         self.measurementMatrix=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])    #H
         self.transitionMatrix=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])  #状态转移矩阵
         self.processNoiseCov=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) * 0.03    #过程噪声矩阵
         self.B=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 0]])    #B
+        self.d = dict()  # 存储当前帧中为轨迹分配的类
+        self.tracks = dict()  # 所有轨迹
+        self.deleted_tracks = []  # 在这一帧中被删除的轨迹id的集合
+        self.clusters = []  # 当前帧中的点
+        self.not_detected_times=dict()
+
+        self.frame = 0  # 当前帧号
+        self.successive_times = 0  # 用于判断是否生成新轨迹
+        self.plength = 3
+
         self.min_last_time=min_last_time
+        self.G=G    #同一条轨迹在相邻两帧之间最大的移动距离
+        self.xmin=xmin  #空间最小横向坐标
+        self.xmax=xmax  #空间最大横向坐标
+        self.ymax=ymax  #空间的最大纵向长度
 
         self.init_tracks()
 
@@ -31,19 +35,39 @@ class Multi_Kalman_Tracker():
         self.track_num=0    #track最大的id为track_num-1
 
         for i in range(len(self.clusters)):
-            self.init_track(self.clusters[i])
+            track=self.init_track(self.clusters[i])
+            self.d[track.id]=i
 
     #初始化轨迹
     def init_track(self,s):
         track=Track(self.track_num,s,self.processNoiseCov,self.frame)
+        self.tracks[self.track_num]=track
+        self.not_detected_times[self.track_num]=0
         self.track_num+=1
-        self.tracks.append(track)
+        return track
 
     #预测每一条轨迹在下一帧中的位置
     def predict(self):
-        for track in self.tracks:
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
             track.s_=np.matmul(self.transitionMatrix,track.s)+np.matmul(self.B,track.u.mean(axis=0))
             track.P_=np.matmul(np.matmul(self.transitionMatrix,track.P),self.transitionMatrix.T)+self.processNoiseCov
+
+    #计算每条轨迹与当前帧中每个点之间的距离
+    def cal_distance(self):
+        # 计算得到每条轨迹的预测位置与聚类得到的点的距离
+        distance = np.array([])
+        for track_id in self.tracks:
+            track = self.tracks[track_id]
+            row = np.array([])
+            for j in range(len(self.clusters)):
+                row = np.append(row, [np.linalg.norm(self.clusters[j] - track.s_)], axis=0)
+            if distance.size == 0:
+                distance = np.array([row])
+            else:
+                distance = np.append(distance, [row], axis=0)
+
+        return distance
 
     #使用匈牙利算法为轨迹分配点
     def association(self):
@@ -51,44 +75,74 @@ class Multi_Kalman_Tracker():
         if len(self.clusters)==0:
             return
 
-        #计算得到每条轨迹的预测位置与聚类得到的点的距离
-        distance=np.array([])
-        for i in range(self.track_num):
-            track=self.tracks[i]
-            row = np.array([])
-            for j in range(len(self.clusters)):
-                row=np.append(row,[np.linalg.norm(self.clusters[j]-track.s_)],axis=0)
-            if distance.size==0:
-                distance=np.array([row])
-            else:
-                distance=np.append(distance,[row],axis=0)
+        distance=self.cal_distance()
 
         #使用匈牙利算法为每条轨迹分配一个点
         row_ind,col_ind=hungary(distance)
+        track_ids=list(self.tracks.keys())
 
         for i in range(self.track_num):
             if col_ind[i]<len(self.clusters) and distance[i][col_ind[i]]<self.G:
-                self.d[i]=col_ind[i]
+                self.d[track_ids[i]]=col_ind[i]
+
+    #判断轨迹是否位于边缘
+    def is_at_edge(self,s):
+        #判断是否位于给定空间边缘
+        if s[0]<self.xmin+0.2 or s[0]>self.xmax-0.2 or s[1]>self.ymax-0.2:
+            return True
+        #判断是否位于雷达探测范围边缘
+        if s[1]<0.2:
+            return True
+        if s[0]!=0:
+            if s[1]/math.sqrt(3)-0.2<abs(s[0]):
+                return True
+
+        return False
+
+    #处理未被分配到点的轨迹
+    def deal_unassigned_track(self):
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
+            #若轨迹未被分配到点
+            if track_id not in self.d:
+                #若上一帧中轨迹位于边缘
+                if self.is_at_edge(track.s):
+                    self.not_detected_times[track_id]+=1
+                    if self.not_detected_times[track_id]>self.min_last_time:
+                        self.deleted_tracks(track_id)
+                    else:
+                        track.u=np.append(track.u,[[0,0,0]],axis=0)
+                        track.points[self.frame]=track.s
+                        track.point_num+=1
+                else:
+                    track.u=np.append(track.u,[[0,0,0]],axis=0)
+                    track.points[self.frame]=track.s
+                    track.point_num+=1
+                    self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-1)
+
+    #删除指定轨迹
+    def delete_track(self,track_id):
+        del self.tracks[track_id]
+        self.track_num-=1
+        if track_id in self.not_detected_times:
+            del self.not_detected_times[track_id]
+        self.deleted_tracks.append(track_id)
 
     #更新
     def update(self):
 
+        self.deal_unassigned_track()
+
         used_clusters=[]
 
-        for i in range(self.track_num):
-            track=self.tracks[i]
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
             frames = list(track.points.keys())
 
             #若当前轨迹没有被分配到点，则不对当前点进行更新
             try:
-                cluster_id=self.d[i]
+                cluster_id=self.d[track_id]
             except:
-                track.s = track.s_
-                track.P = track.P_
-                track.u = np.append(track.u, [np.append(track.s[:2] - track.points[frames[-1]][:2], [0], axis=0)],
-                                    axis=0)
-                track.points[self.frame] = track.s
-                track.point_num += 1
                 continue
 
             #将该点标记为已被分配
@@ -125,7 +179,7 @@ class Multi_Kalman_Tracker():
                     if_set_zero=False
 
         if if_set_zero:
-            self.successive_times=0
+            self.successive_times=max(self.successive_times-1,0)
 
     #输入下一帧数据进行计算
     def nextFrame(self,clusters,frame):
@@ -152,8 +206,8 @@ class Multi_Kalman_Tracker():
     def get_each_person_position(self):
         position=dict()
 
-        for track in self.tracks:
-            position[track.id]=track.points[self.frame]
+        for track_id in self.tracks:
+            position[track_id]=self.tracks[track_id].points[self.frame]
 
         return position
 
@@ -176,7 +230,7 @@ class Multi_Kalman_Tracker():
     def get_each_person_velocity(self):
         velocity=dict()
 
-        for track in self.tracks:
-            velocity[track.id]=track.u[-1]
+        for track_id in self.tracks:
+            velocity[track_id]=np.linalg.norm(self.tracks[track_id].u[-1][:2])
 
         return velocity

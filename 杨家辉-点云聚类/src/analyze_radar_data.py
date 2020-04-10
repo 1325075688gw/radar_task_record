@@ -19,7 +19,10 @@ queue_for_show = Queue()
 
 sys.path.append(r"F:\radar_soft\radar_task_record\龚伟_点云检测")
 sys.path.append(r"F:\radar_soft\radar_task_record\郭泽中_跟踪、姿态识别")
-import Kalman
+import hungary
+from Kalman import Multi_Kalman_Tracker
+import posture_analyze
+
 import receive_uart_data
 import commo
 
@@ -40,7 +43,8 @@ def cluster_points():
 	'''
 	# frame_data = receive_uart_data.queue_for_count.get()
 	flag = 1
-	tracker = Kalman.Multi_Kalman_Tracker(float('inf'), 5)
+	person_dict = {} #key:id号，value:Person对象
+	tracker=Multi_Kalman_Tracker(float('inf'),5,-3,3,7)
 	while 1:
 		# print("a:{0}".format(receive_uart_data.a))
 		print("queue_for_count长度：{0}".format(commo.queue_for_count.qsize()))
@@ -68,13 +72,18 @@ def cluster_points():
 		#Identify people
 		end_time = time.time() * 1000
 		print("聚类需要:{0}\n".format(end_time - start_time))
-		person_list = people.transform_cluster_to_people(cluster_dict)
 		#track_begin
-		clusters = []
-		for p in person_list:
-			cluster_center = [p.x,p.y,p.z]
-			clusters.append(cluster_center)
-		tracker.nextFrame(clusters, frame_num)
+		clusters_center = getpoints.get_cluster_center(cluster_dict)
+		tracker.nextFrame(clusters_center, frame_num)
+		
+		#根据跟踪结果更新人的信息
+		person_dict = people.update_people_status(person_dict,cluster_dict,tracker)
+
+		person_list = []
+		for i in person_dict:
+			person = copy.deepcopy(person_dict[i])
+			person_list.append(person)
+			
 		positions = tracker.get_each_person_position()
 		temp = [positions, person_list]
 		#track_end
