@@ -9,6 +9,8 @@ import json
 import threading
 import ctypes
 import inspect
+import sys
+import matplotlib.pyplot as plt
 
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread, Lock, Condition
@@ -16,7 +18,15 @@ from collections import OrderedDict
 from queue import Queue
 from copy import deepcopy
 
-queue = Queue()
+sys.path.append(r"F:\radar_soft\radar_task_record\杨家辉_点云聚类\src")
+sys.path.append(r"F:\radar_soft\radar_task_record\郭泽中_跟踪、姿态识别")
+import analyze_radar_data
+import commo
+import Kalman
+
+queue_for_calculate = Queue()
+# queue_for_count = Queue()
+a = 1
 
 tlv = "2I"
 tlv_struct = struct.Struct(tlv)
@@ -142,16 +152,16 @@ class uartParserSDK():
             end_time = time.time() * 1000
             print("解析一帧需要:{0}\n".format(end_time - start_time))
 
-    def save_points_thread(self):
-        self.save_points_th = Thread(target=self.save_points)
-        return self.save_points_th
+    def put_queue_thread(self):
+        self.put_queue_th = Thread(target=self.put_queue)
+        return self.put_queue_th
 
-    def save_points(self):
+    def put_queue(self):
         while self.flag:
-            print("queue长度:{0}".format(queue.qsize()))
+            print("queue长度:{0}".format(queue_for_calculate.qsize()))
             point_cloud_num = 0
             point_cloud_list = []
-            cart = queue.get().transpose()
+            cart = queue_for_calculate.get().transpose()
             for index, value in enumerate(cart):
                 # raw_point = RawPoint(index+1, value[0], value[1], value[2], value[3], value[4]).__dict__
                 point = Point(index + 1, value[0], value[1], value[2], value[3], value[4]).__dict__
@@ -164,14 +174,30 @@ class uartParserSDK():
             temp["point_num"] = point_cloud_num
             temp["point_list"] = point_cloud_list
             frame_num = "frame_num_" + str(self.frame_num)
-            print("len(value)：{0}".format(self.frame_num))
-            self.json_data.update({frame_num: temp})
+            print("\nlen(value)：{0}".format(self.frame_num))
+            frame_dict = {frame_num: temp}
+            self.json_data.update(frame_dict)
+            commo.queue_for_count.put(temp)
+            print("queue_for_count_receive：{0}".format(commo.queue_for_count.qsize()))
 
             if self.frame_num == 1500:
                 with open("new_points.json", "w") as file:
                     json.dump(self.json_data, file)
                 self.flag = 0
                 print("丢失{0}帧 ".format(self.missed_frame_num))
+
+    def show_frame(self):
+        time.sleep(5)
+        self.cluster_points_thread().start()
+        self.show_cluster_tracker_thread().start()
+
+    def cluster_points_thread(self):
+        cluster_points_th = Thread(target=analyze_radar_data.cluster_points)
+        return cluster_points_th
+
+    def show_cluster_tracker_thread(self):
+        show_cluster_tracker_th = Thread(target=analyze_radar_data.show_cluster_tracker)
+        return show_cluster_tracker_th
 
     def get_frame(self, data_in):
         self.polar = np.zeros((5, self.max_points))
@@ -258,7 +284,6 @@ class uartParserSDK():
                 self.detected_point_num = i
                 break
         self.polar_to_cart()
-
     def polar_to_cart(self):
         self.cart = np.empty((5, self.detected_point_num))
         for i in range(0, self.detected_point_num):
@@ -270,7 +295,7 @@ class uartParserSDK():
             self.cart[1, i] = self.polar[0, i] * math.cos(self.polar[2, i]) * math.cos(self.polar[1, i])
         self.cart[3, :] = self.polar[3, 0:self.detected_point_num]
         self.cart[4, :] = self.polar[4, 0:self.detected_point_num]
-        queue.put(deepcopy(self.cart))
+        queue_for_calculate.put(deepcopy(self.cart))
 
     def parse_target_list(self, data_in, data_length):
         self.detected_target_num = int(data_length / target_list_size)
@@ -317,11 +342,10 @@ class uartParserSDK():
 
     def stop_thread(self, thread):
         self._async_raise(thread.ident, SystemExit)
-
-
 if __name__ == "__main__":
     uart_parse_sdk_instance = uartParserSDK("COM4", "COM3")
     uart_parse_sdk_instance.open_port()
     uart_parse_sdk_instance.send_config()
     uart_parse_sdk_instance.receive_data_thread().start()
-    uart_parse_sdk_instance.save_points_thread().start()
+    uart_parse_sdk_instance.put_queue_thread().start()
+    uart_parse_sdk_instance.show_frame()

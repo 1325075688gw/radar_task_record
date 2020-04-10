@@ -2,9 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np   
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Circle
+import time
+import sys
+sys.path.append(r"F:\radar_soft\radar_task_record\龚伟_点云检测")
+import commo
 
 
 import drawcube
+# from ..analyze_radar_data import queue_for_show
 
 def draw_circle(ax,center_point,r):
 	'''Draw a circle on the plot
@@ -18,31 +23,28 @@ def draw_circle(ax,center_point,r):
 	ax.add_patch(cir1)
 
 def show2d_new(person_list, fig):
-	'''show 2d 
-	
-	 
-	'''
-	colValue = ['gray', 'r', 'b', 'y', 'c', 'b', 'k', 'm','w']
-	#ax=Axes3D(fig) 
-	ax = fig.add_subplot(111)
+	colValue = ['gray', 'r', 'b', 'y', 'c', 'b', 'k', 'm', 'w']
+	# ax=Axes3D(fig)
+	ax = fig.add_subplot(121)
 	i = 0
 	for person in person_list:
 		cluster_points = person.points
 		X = np.array(cluster_points)
-		#print(X[:,0])
-		label = 'Person' + str(i+1)
-		ax.scatter(X[:,0],X[:,1],c=colValue[(i+1)%len(colValue)],label=label + '\n' + "当前检测到{0}个点".format(len(cluster_points)), marker = '.')
+		# print(X[:,0])
+		label = 'Person' + str(i + 1)
+		ax.scatter(X[:, 0], X[:, 1], c=colValue[(i + 1) % len(colValue)],
+				   label=label + '\n' + "当前检测到{0}个点".format(len(cluster_points)), marker='.')
 		if i != -1:
 			mean = np.mean(cluster_points, axis=0)
-			draw_circle(ax,[mean[0],mean[1]],0.2)
+			draw_circle(ax, [mean[0], mean[1]], 0.2)
 		i = i + 1
-	ax.scatter(0,0,c = 'g')
+	ax.scatter(0, 0, c='g')
 	ax.set_xlabel('x')
 	ax.set_ylabel('y')
-	plt.xlim(-3,3)
-	plt.ylim(0,6)
+	plt.xlim(-3, 3)
+	plt.ylim(0, 6)
 	plt.plot(label="")
-	ax.legend(loc = 'upper left')
+	ax.legend(loc='upper left')
 
 def show2d(cluster_concrete_dict, fig):
 	'''show 2d 
@@ -72,6 +74,14 @@ def show2d(cluster_concrete_dict, fig):
 	plt.plot(label="")
 	ax.legend(loc = 'upper left')
 
+
+def show_track(positions,fig):
+	ax=fig.add_subplot(122)
+	for person in positions:
+		position=positions[person]
+		ax.plot(position[0],position[1],'o',markersize=40,label=str(person))
+		ax.set_title('当前帧有:'+str(len(positions.keys()))+'个人')
+		ax.legend(markerscale=1.0/10)
 
 def show3d(cluster_concrete_dict, fig):
 	'''

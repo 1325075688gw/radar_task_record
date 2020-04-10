@@ -10,6 +10,7 @@ class Person():
 		self.current_height = 0
 		self.x = 0
 		self.y = 0
+		self.z = 0
 		self.compute_height_count = 0
 		self.compute_person_attributes()
 		
@@ -19,6 +20,7 @@ class Person():
 		xyz_min = np.min(self.points, axis=0)
 		self.x = xyz_mean[0]
 		self.y = xyz_mean[1]
+		self.z = xyz_mean[2]
 		self.length = xyz_max[0] - xyz_min[0]
 		self.width = xyz_max[1] - xyz_min[1]
 		self.current_height = xyz_max[2]
