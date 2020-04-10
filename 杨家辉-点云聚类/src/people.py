@@ -20,7 +20,7 @@ class Person():
 		self.z = 0
 		self.compute_height_count = 0
 		self.height_kal = HeightKalman()  #卡尔曼滤波计算身高
-		self.posture = Posture(30)
+		self.posture = Posture(5)
 		self.compute_person_attributes()
 		
 	def compute_person_attributes(self):
@@ -44,22 +44,18 @@ class Person():
 		'''计算一帧当中人的身高（不是实际身高）
 		
 		'''
-		z_list = [data[2] for data in self.points]
-		k = int(len(z_list) * 0.1) + 1
+		k = int(len(self.points) * 0.1) + 1
+		z_list = [self.points[i][2] for i in range(k)]
 		#topk begin
-		heap = []
+		tem_height = 0
+		sum_list = sum(z_list)
 		for i in range(k):
-			heapq.heappush(heap,z_list[i])
-			heapq.heapify(heap)
-		for i in range(k,len(z_list)):
-			if z_list[i] > heap[0]:
-				heap[0] = z_list[i]
-				heapq.heapify(heap)
-		self.current_height =  np.mean(heap)
+			tem_height += z_list[i]*z_list[i]/sum_list
+		self.current_height =  tem_height
 	
 	def cal_actual_height(self):
 		
-		if self.compute_height_count >= 2000:
+		if self.compute_height_count >= 150:
 			return
 		#使用kalman滤波迭代计算身高
 		self.height_kal.cal_height(self.current_height) 
@@ -71,17 +67,10 @@ class Person():
 		self.points = points
 		self.compute_person_attributes()
 		print("当前高度：%f"%self.current_height)
-		if self.current_height>0.5 and self.current_height<2.3:
+		if self.current_height>1.45 and self.current_height<2:
 			self.cal_actual_height()
 		
 
-def transform_cluster_to_people(cluster_dict):
-	person_list = []
-	for i in cluster_dict:
-		tem_person = Person(cluster_dict[i])
-		if tem_person.is_person():
-			person_list.append(tem_person)
-	return person_list
 
 #根据跟踪结果，将点云和人对应起来，并根据点云信息更新人的状态
 def update_people_status(person_dict, cluster_dict, tracker):
