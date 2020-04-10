@@ -2,6 +2,12 @@ import cluster_sta
 import json
 import numpy as np
 
+def get_cluster_center(cluster_dict):
+	center_point_list = []
+	for i in cluster_dict:
+		center_point = np.mean(cluster_dict[i], axis=0)
+		center_point_list.append([center_point[0],center_point[1],center_point[2]])
+	return center_point_list
 
 def get_frame_points(frame_data):
 	points = []
