@@ -189,6 +189,8 @@ class Multi_Kalman_Tracker():
         self.clusters=clusters
         #判断当前是否有轨迹存在
         if self.track_num==0:
+            if len(clusters)==0:
+                return
             self.init_tracks()
         else:
             self.predict()

@@ -10,10 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 #下一步修改方案，按照扇面进行搜索范围判定
 
 def dict_z(p1,p2):
-	if p1[2] > p2[2]:
-		return p1[2] - p2[2]
-	else:
-		return p2[2] - p1[2]
+    return abs(p1[2]-p2[2])
 
 def dict_xy(p1,p2):
 	'''
