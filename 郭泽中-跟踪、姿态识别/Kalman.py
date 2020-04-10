@@ -35,7 +35,8 @@ class Multi_Kalman_Tracker():
         self.track_num=0    #track最大的id为track_num-1
 
         for i in range(len(self.clusters)):
-            self.init_track(self.clusters[i])
+            track=self.init_track(self.clusters[i])
+            self.d[track.id]=i
 
     #初始化轨迹
     def init_track(self,s):
@@ -43,6 +44,7 @@ class Multi_Kalman_Tracker():
         self.tracks[self.track_num]=track
         self.not_detected_times[self.track_num]=0
         self.track_num+=1
+        return track
 
     #预测每一条轨迹在下一帧中的位置
     def predict(self):
@@ -189,8 +191,6 @@ class Multi_Kalman_Tracker():
         self.clusters=clusters
         #判断当前是否有轨迹存在
         if self.track_num==0:
-            if len(clusters)==0:
-                return
             self.init_tracks()
         else:
             self.predict()
