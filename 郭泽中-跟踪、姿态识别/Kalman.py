@@ -231,6 +231,6 @@ class Multi_Kalman_Tracker():
         velocity=dict()
 
         for track_id in self.tracks:
-            velocity[track_id]=self.tracks[track_id].u[-1]
+            velocity[track_id]=np.linalg.norm(self.tracks[track_id].u[-1][:2])
 
         return velocity
