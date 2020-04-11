@@ -101,24 +101,29 @@ class Multi_Kalman_Tracker():
 
     #处理未被分配到点的轨迹
     def deal_unassigned_track(self):
+        to_be_deleted=[]
         for track_id in self.tracks:
             track=self.tracks[track_id]
             #若轨迹未被分配到点
-            if track_id not in self.d:
-                #若上一帧中轨迹位于边缘
-                if self.is_at_edge(track.s):
-                    self.not_detected_times[track_id]+=1
-                    if self.not_detected_times[track_id]>self.min_last_time:
-                        self.deleted_tracks(track_id)
-                    else:
-                        track.u=np.append(track.u,[[0,0,0]],axis=0)
-                        track.points[self.frame]=track.s
-                        track.point_num+=1
+            if track_id in self.d:
+                continue
+            #若上一帧中轨迹位于边缘
+            if self.is_at_edge(track.s):
+                self.not_detected_times[track_id]+=1
+                if self.not_detected_times[track_id]>self.min_last_time:
+                    to_be_deleted.append(track_id)
                 else:
                     track.u=np.append(track.u,[[0,0,0]],axis=0)
                     track.points[self.frame]=track.s
                     track.point_num+=1
-                    self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-1)
+            else:
+                track.u=np.append(track.u,[[0,0,0]],axis=0)
+                track.points[self.frame]=track.s
+                track.point_num+=1
+                self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-1)
+
+        for track_id in to_be_deleted:
+            self.delete_track(track_id)
 
     #删除指定轨迹
     def delete_track(self,track_id):

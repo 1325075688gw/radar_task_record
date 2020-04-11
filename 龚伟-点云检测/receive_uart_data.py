@@ -10,7 +10,6 @@ import threading
 import ctypes
 import inspect
 import sys
-import matplotlib.pyplot as plt
 
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread, Lock, Condition
@@ -18,15 +17,13 @@ from collections import OrderedDict
 from queue import Queue
 from copy import deepcopy
 
-sys.path.append(r"F:\radar_soft\radar_task_record\杨家辉_点云聚类\src")
-sys.path.append(r"F:\radar_soft\radar_task_record\郭泽中_跟踪、姿态识别")
+sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\杨家辉-点云聚类\src")
+sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\郭泽中-跟踪、姿态识别")
 import analyze_radar_data
 import commo
 import Kalman
 
 queue_for_calculate = Queue()
-# queue_for_count = Queue()
-a = 1
 
 tlv = "2I"
 tlv_struct = struct.Struct(tlv)
@@ -180,14 +177,15 @@ class uartParserSDK():
             commo.queue_for_count.put(temp)
             print("queue_for_count_receive：{0}".format(commo.queue_for_count.qsize()))
 
-            if self.frame_num == 1500:
+            if self.frame_num == 15000:
                 with open("new_points.json", "w") as file:
                     json.dump(self.json_data, file)
                 self.flag = 0
                 print("丢失{0}帧 ".format(self.missed_frame_num))
+                exit()
 
     def show_frame(self):
-        time.sleep(5)
+        time.sleep(3)
         self.cluster_points_thread().start()
         self.show_cluster_tracker_thread().start()
 
@@ -342,6 +340,7 @@ class uartParserSDK():
 
     def stop_thread(self, thread):
         self._async_raise(thread.ident, SystemExit)
+
 if __name__ == "__main__":
     uart_parse_sdk_instance = uartParserSDK("COM4", "COM3")
     uart_parse_sdk_instance.open_port()
