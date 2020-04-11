@@ -11,9 +11,10 @@ import numpy as np
 class Height():
 
 
-    def __init__(self,height):
+    def __init__(self,height,N):
         self.height=[height]
         self.origin_height=[height]
+        self.N=N
 
         #kalman部分
         self.transitionMatrix = 1
@@ -23,7 +24,8 @@ class Height():
         self.s = height
         self.s_ = 0
 
-    def get_height(self,N):
+    def get_height(self):
+        N=self.N
 
         if len(self.height)<2*N+1:
             return None

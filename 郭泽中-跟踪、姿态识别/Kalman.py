@@ -41,7 +41,7 @@ class Multi_Kalman_Tracker():
 
     #初始化轨迹
     def init_track(self,s,height):
-        track=Track(self.track_num,s,self.processNoiseCov,self.frame,height)
+        track=Track(self.track_num,s,self.processNoiseCov,self.frame,height,self.N)
         self.tracks[self.track_num]=track
         self.not_detected_times[self.track_num]=0
         self.track_num+=1
@@ -197,3 +197,16 @@ class Multi_Kalman_Tracker():
             self.predict()
             self.association()
             self.update()
+
+    #获得所有数据
+    def get_data(self):
+        data=dict()
+
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
+            if len(track.points)<self.N*2+1:
+                continue
+            data[track.id]=[track.points[-self.N-1],np.linalg.norm(track.u[-self.N-1]),track.height.get_height()]
+
+        return data
+
