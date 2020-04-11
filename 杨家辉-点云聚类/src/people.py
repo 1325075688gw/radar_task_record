@@ -1,8 +1,8 @@
 import sys
-sys.path.append('../gzz')
 import numpy as np 
 import heapq
 
+sys.path.append("../郭泽中-跟踪、姿态识别")
 from height_kalman import HeightKalman
 from posture_analyze import Posture
 import Kalman
@@ -39,23 +39,19 @@ class Person():
 		if(self.current_height < 0.3):
 			return 0
 		return 1
-		
+
 	def cal_current_height(self):
 		'''计算一帧当中人的身高（不是实际身高）
-		
+
 		'''
 		k = int(len(self.points) * 0.1) + 1
 		z_list = [self.points[i][2] for i in range(k)]
-		print("到这了吗")
-		print("shuchu:",z_list)
-		print(sum(z_list))
-		#topk begin
 		tem_height = 0
 		sum_list = sum(z_list)
 		for i in range(k):
 			tem_height += z_list[i]*z_list[i]/sum_list
 		self.current_height =  tem_height
-	
+
 	def cal_actual_height(self):
 		
 		if self.compute_height_count >= 150:
@@ -82,6 +78,8 @@ def update_people_status(person_dict, cluster_dict, tracker):
 	for id in tracker.d:
 		#将点云和人对应
 		index = tracker.d[id]
+		print("index{0}".format(index))
+		print("dict:{0}".format(cluster_dict))
 		if id not in person_dict.keys():
 			person_dict[id] = Person(cluster_dict[index],id)
 		else:

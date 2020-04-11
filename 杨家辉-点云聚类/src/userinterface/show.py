@@ -22,7 +22,8 @@ def draw_circle(ax,center_point,r):
 	cir1 = Circle(xy = (center_point[0], center_point[1]), radius=r, alpha=0.5)
 	ax.add_patch(cir1)
 
-def show2d_new(person_list, fig):
+def show2d_new(person_list, fig, frame_num):
+	print("ffffffffffffffffffffff")
 	colValue = ['gray', 'r', 'b', 'y', 'c', 'b', 'k', 'm', 'w']
 	# ax=Axes3D(fig)
 	ax = fig.add_subplot(121)
@@ -44,6 +45,7 @@ def show2d_new(person_list, fig):
 	plt.xlim(-3, 3)
 	plt.ylim(0, 6)
 	plt.plot(label="")
+	ax.set_title('当前是第:' + str(frame_num) + '帧')
 	ax.legend(loc='upper left')
 
 def show2d(cluster_concrete_dict, fig):
@@ -75,14 +77,16 @@ def show2d(cluster_concrete_dict, fig):
 	ax.legend(loc = 'upper left')
 
 
-def show_track(positions,fig):
+def show_track(positions, fig, frame_num):
+	print("方法")
 	ax=fig.add_subplot(122)
+	plt.xlim(-3, 3)
+	plt.ylim(0, 6)
+	ax.set_title('当前帧有:'+str(len(positions.keys()))+'个人' + ' == 当前是第:' + str(frame_num) + '帧')
+	ax.legend(markerscale=1.0/10)
 	for person in positions:
 		position=positions[person]
 		ax.plot(position[0],position[1],'o',markersize=40,label=str(person))
-		ax.set_title('当前帧有:'+str(len(positions.keys()))+'个人')
-		ax.legend(markerscale=1.0/10)
-
 def show3d(cluster_concrete_dict, fig):
 	'''
 	显示图像,比show_cluster多了标签
