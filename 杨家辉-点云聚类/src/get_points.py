@@ -17,7 +17,7 @@ def get_frame_points(frame_data):
 		points.append(point)
 	frame_points = {}
 	frame_points[frame_data['frame_num']] = points
-	return frame_points
+	return frame_data['frame_num'],points
 
 def get_json_points(filename):
 	'''Read json data and return data in correct format.
@@ -128,7 +128,7 @@ def get_concrete_cluster(cluster_dict):
 		cluster_concrete_dict[i] = attr_dict
 	return cluster_concrete_dict
 	
-def tag2cluster(points, tag):
+def tag_to_cluster(points, tag):
 	'''
 	根据points和tag将每一帧的点按聚类类别分类，输出格式为{'0':[[point1][point2]],'1':[[][]]}
 	'''

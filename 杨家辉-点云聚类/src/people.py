@@ -46,6 +46,9 @@ class Person():
 		'''
 		k = int(len(self.points) * 0.1) + 1
 		z_list = [self.points[i][2] for i in range(k)]
+		print("到这了吗")
+		print("shuchu:",z_list)
+		print(sum(z_list))
 		#topk begin
 		tem_height = 0
 		sum_list = sum(z_list)
@@ -64,6 +67,7 @@ class Person():
 		print("更新后的身高为：%f"%self.height)
 	
 	def update(self, points):
+		print("更新了吗")
 		self.points = points
 		self.compute_person_attributes()
 		print("当前高度：%f"%self.current_height)
@@ -74,6 +78,7 @@ class Person():
 
 #根据跟踪结果，将点云和人对应起来，并根据点云信息更新人的状态
 def update_people_status(person_dict, cluster_dict, tracker):
+	print("update？")
 	for id in tracker.d:
 		#将点云和人对应
 		index = tracker.d[id]

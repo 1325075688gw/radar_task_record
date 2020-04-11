@@ -4,8 +4,8 @@ sys.path.append('./userinterface')
 import matplotlib.pyplot as plt  
 import json
 
-import getpoints 
-import pointfilter
+import get_points 
+import points_filter
 import cluster_dbscan
 import time
 import numpy as np
@@ -51,29 +51,24 @@ def cluster_points():
 		frame_data = commo.queue_for_count.get()
 		print("queue_for_count长度2：{0}".format(commo.queue_for_count.qsize()))
 		start_time = time.time() * 1000
-		frame_points = getpoints.get_frame_points(frame_data)
-		points = []
-		frame_num = 0
-		for i in frame_points:
-			frame_num = i
-			points = frame_points[i]
+		frame_num, points = get_points.get_frame_points(frame_data)
 		#point filter
-		points = pointfilter.pointfilter_y(points, 0, 10)
-		points = pointfilter.dopperfilter(points, 0, 0)
+		points = points_filter.filter_by_y(points, 0, 10)
+		points = points_filter.filter_by_dopper(points, 0, 0)
 		#cluster
 		# tag = cluster_dbscan.dbscan(points,0.25,5,1,'2D')
 		if points == []:
 			continue
 		tag = cluster_dbscan.dbscan_official(points, 0.25, 5, '2D')
-		cluster_dict = getpoints.tag2cluster(points, tag)
+		cluster_dict = get_points.tag_to_cluster(points, tag)
 		#
-		# cluster_dict = pointfilter.noisefilter(cluster_dict)
-		# cluster_dict = pointfilter.countfilter(cluster_dict,20) #过滤点数过小的类
+		cluster_dict = points_filter.filter_by_noise(cluster_dict)
+		cluster_dict = points_filter.filter_by_count_number(cluster_dict,20) #过滤点数过小的类
 		#Identify people
 		end_time = time.time() * 1000
 		print("聚类需要:{0}\n".format(end_time - start_time))
 		#track_begin
-		clusters_center = getpoints.get_cluster_center(cluster_dict)
+		clusters_center = get_points.get_cluster_center(cluster_dict)
 		tracker.nextFrame(clusters_center, frame_num)
 		
 		#根据跟踪结果更新人的信息
@@ -90,7 +85,7 @@ def cluster_points():
 		commo.queue_for_show.put(temp)
 		print("queue_for_show长度1：{0}".format(commo.queue_for_show.qsize()))
 # return person_list
-	#concrete_cluster = getpoints.get_concrete_cluster(cluster_dict)
+	#concrete_cluster = get_points.get_concrete_cluster(cluster_dict)
 def show_cluster_tracker():
 	fig = plt.figure(figsize=(10, 10))
 	while 1:

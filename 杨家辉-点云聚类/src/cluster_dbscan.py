@@ -72,7 +72,7 @@ def dbscan_official(data,eps,minpts,type='2D'):
 		X = X[:,:2]
 	elif type == '3D':
 		X = X[:,:3]
-	db = skc.DBSCAN(eps=0.25, min_samples=5).fit(X)
+	db = skc.DBSCAN(eps=0.25, min_samples=5).fit_predict(X)
 	return db.labels_
 	
 '''	
