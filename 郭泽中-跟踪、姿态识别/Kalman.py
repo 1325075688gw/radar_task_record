@@ -7,11 +7,11 @@ import math
 class Multi_Kalman_Tracker():
 
     #初始化
-    def __init__(self,G,min_last_time,xmin,xmax,ymax):
-        self.measurementMatrix=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])    #H
-        self.transitionMatrix=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])  #状态转移矩阵
-        self.processNoiseCov=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) * 0.03    #过程噪声矩阵
-        self.B=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 0]])    #B
+    def __init__(self,G,min_last_time,xmin,xmax,ymax,N):
+        self.measurementMatrix=np.array([[1, 0,], [0, 1]])    #H
+        self.transitionMatrix=np.array([[1, 0], [0, 1]])  #状态转移矩阵
+        self.processNoiseCov=np.array([[1, 0], [0, 1]]) * 0.03    #过程噪声矩阵
+        self.B=np.array([[1, 0], [0, 1]])    #B
         self.d = dict()  # 存储当前帧中为轨迹分配的类
         self.tracks = dict()  # 所有轨迹
         self.deleted_tracks = []  # 在这一帧中被删除的轨迹id的集合
@@ -20,8 +20,10 @@ class Multi_Kalman_Tracker():
 
         self.frame = 0  # 当前帧号
         self.successive_times = 0  # 用于判断是否生成新轨迹
-        self.plength = 3
+        self.plength = 2
 
+        self.N=N
+        self.heights=[]    #当前帧中的每个人的身高
         self.min_last_time=min_last_time
         self.G=G    #同一条轨迹在相邻两帧之间最大的移动距离
         self.xmin=xmin  #空间最小横向坐标
@@ -35,16 +37,14 @@ class Multi_Kalman_Tracker():
         self.track_num=0    #track最大的id为track_num-1
 
         for i in range(len(self.clusters)):
-            track=self.init_track(self.clusters[i])
-            self.d[track.id]=i
+            self.init_track(self.clusters[i],self.heights[i])
 
     #初始化轨迹
-    def init_track(self,s):
-        track=Track(self.track_num,s,self.processNoiseCov,self.frame)
+    def init_track(self,s,height):
+        track=Track(self.track_num,s,self.processNoiseCov,self.frame,height)
         self.tracks[self.track_num]=track
         self.not_detected_times[self.track_num]=0
         self.track_num+=1
-        return track
 
     #预测每一条轨迹在下一帧中的位置
     def predict(self):
@@ -99,31 +99,30 @@ class Multi_Kalman_Tracker():
 
         return False
 
+    #更新未被分配到点的轨迹
+    def update_unassigned_track(self,track_id):
+        track=self.tracks[track_id]
+
+        track.u=np.append(track.u,[[0,0]],axis=0)
+        track.points.append(track.s)
+        track.height.do_filter(track.height.s)
+
     #处理未被分配到点的轨迹
     def deal_unassigned_track(self):
-        to_be_deleted=[]
         for track_id in self.tracks:
             track=self.tracks[track_id]
             #若轨迹未被分配到点
-            if track_id in self.d:
-                continue
-            #若上一帧中轨迹位于边缘
-            if self.is_at_edge(track.s):
-                self.not_detected_times[track_id]+=1
-                if self.not_detected_times[track_id]>self.min_last_time:
-                    to_be_deleted.append(track_id)
+            if track_id not in self.d:
+                #若上一帧中轨迹位于边缘
+                if self.is_at_edge(track.s):
+                    self.not_detected_times[track_id]+=1
+                    if self.not_detected_times[track_id]>self.min_last_time:
+                        self.delete_track(track_id)
+                    else:
+                        self.update_unassigned_track(track_id)
                 else:
-                    track.u=np.append(track.u,[[0,0,0]],axis=0)
-                    track.points[self.frame]=track.s
-                    track.point_num+=1
-            else:
-                track.u=np.append(track.u,[[0,0,0]],axis=0)
-                track.points[self.frame]=track.s
-                track.point_num+=1
-                self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-1)
-
-        for track_id in to_be_deleted:
-            self.delete_track(track_id)
+                    self.update_unassigned_track(track_id)
+                    self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-1)
 
     #删除指定轨迹
     def delete_track(self,track_id):
@@ -142,7 +141,6 @@ class Multi_Kalman_Tracker():
 
         for track_id in self.tracks:
             track=self.tracks[track_id]
-            frames = list(track.points.keys())
 
             #若当前轨迹没有被分配到点，则不对当前点进行更新
             try:
@@ -162,12 +160,9 @@ class Multi_Kalman_Tracker():
                 track.s=np.array(track.s)[0]
 
             # 为当前点计算速度(只考虑xy方向的)
-            track.u = np.append(track.u, [np.append(track.s[:2] - track.points[frames[-1]][:2], [0], axis=0)],
-                                axis=0)
-
-            track.points[self.frame] = track.s
-            track.point_num+=1
-            track.original_points[self.frame]=self.clusters[cluster_id]
+            track.u = np.append(track.u, [track.s - track.points[-1]],axis=0)
+            track.points.append(track.s)
+            track.height.do_filter(self.heights[cluster_id])
         #track_update end
 
         #处理当前帧未被处理的点
@@ -187,13 +182,14 @@ class Multi_Kalman_Tracker():
             self.successive_times=max(self.successive_times-1,0)
 
     #输入下一帧数据进行计算
-    def nextFrame(self,clusters,frame):
+    def nextFrame(self,clusters,heights,frame):
         #将上一帧的数据清空
         self.d=dict()
         self.deleted_tracks=[]
         #帧号+1
         self.frame=frame
         self.clusters=clusters
+        self.heights=heights
         #判断当前是否有轨迹存在
         if self.track_num==0:
             self.init_tracks()
@@ -201,41 +197,3 @@ class Multi_Kalman_Tracker():
             self.predict()
             self.association()
             self.update()
-
-    '''
-        func：
-            获取当前帧每个人的位置
-        return:
-            position：字典类型，键值为人的id，对应的值为人的三维坐标（第三维度目前不用，为0)
-    '''
-    def get_each_person_position(self):
-        position=dict()
-
-        for track_id in self.tracks:
-            position[track_id]=self.tracks[track_id].points[self.frame]
-
-        return position
-
-    '''
-        func:
-            获取当前帧对每个聚类的分配
-        return:
-            d:字典类型。键值为人的id，对应的值为类的下标(均为从0开始)
-            deleted_tracks:列表。每个值对应一个在当前帧被删除掉的人的id
-    '''
-    def get_point_distribution(self):
-        return self.d,self.deleted_tracks
-
-    '''
-        func:
-            获取当前帧每个人的速度
-        return:
-            velocity:字典类型。键值为人的id，对应的值为其在当前帧的速度
-    '''
-    def get_each_person_velocity(self):
-        velocity=dict()
-
-        for track_id in self.tracks:
-            velocity[track_id]=np.linalg.norm(self.tracks[track_id].u[-1][:2])
-
-        return velocity
