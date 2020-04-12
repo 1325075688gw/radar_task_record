@@ -6,7 +6,9 @@ import math
 #v5.0
 class Multi_Kalman_Tracker():
 
+
     M=20
+
     rate=0.5
 
     #初始化

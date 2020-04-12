@@ -17,6 +17,7 @@ data=json.load(file)
 tracker=Multi_Kalman_Tracker(float('inf'),30,-3,3,7)
 
 
+
 fig=plt.figure(figsize=(8,8))
 ax=fig.add_subplot(111)
 plt.ion()
