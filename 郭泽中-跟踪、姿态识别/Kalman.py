@@ -6,8 +6,11 @@ import math
 #v5.0
 class Multi_Kalman_Tracker():
 
+    M=20
+    rate=0.5
+
     #初始化
-    def __init__(self,G,min_last_time,xmin,xmax,ymax,N):
+    def __init__(self,G,min_last_time,xmin,xmax,ymax):
         self.measurementMatrix=np.array([[1, 0,], [0, 1]])    #H
         self.transitionMatrix=np.array([[1, 0], [0, 1]])  #状态转移矩阵
         self.processNoiseCov=np.array([[1, 0], [0, 1]]) * 0.03    #过程噪声矩阵
@@ -22,7 +25,6 @@ class Multi_Kalman_Tracker():
         self.successive_times = 0  # 用于判断是否生成新轨迹
         self.plength = 2
 
-        self.N=N
         self.heights=[]    #当前帧中的每个人的身高
         self.min_last_time=min_last_time
         self.G=G    #同一条轨迹在相邻两帧之间最大的移动距离
@@ -103,12 +105,11 @@ class Multi_Kalman_Tracker():
     def update_unassigned_track(self,track_id):
         track=self.tracks[track_id]
 
-        track.u=np.append(track.u,[[0,0]],axis=0)
-        track.points.append(track.s)
-        track.height.do_filter(track.height.s)
+        track.add_real_frame(track.s,[0,0],track.height.s)
 
     #处理未被分配到点的轨迹
     def deal_unassigned_track(self):
+        to_be_deleted=[]
         for track_id in self.tracks:
             track=self.tracks[track_id]
             #若轨迹未被分配到点
@@ -117,12 +118,15 @@ class Multi_Kalman_Tracker():
                 if self.is_at_edge(track.s):
                     self.not_detected_times[track_id]+=1
                     if self.not_detected_times[track_id]>self.min_last_time:
-                        self.delete_track(track_id)
+                        to_be_deleted.append(track_id)
                     else:
                         self.update_unassigned_track(track_id)
                 else:
                     self.update_unassigned_track(track_id)
                     self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-1)
+
+        for track_id in to_be_deleted:
+            self.delete_track(track_id)
 
     #删除指定轨迹
     def delete_track(self,track_id):
@@ -133,7 +137,7 @@ class Multi_Kalman_Tracker():
         self.deleted_tracks.append(track_id)
 
     #更新
-    def update(self):
+    def update_assigned_tracks(self):
 
         self.deal_unassigned_track()
 
@@ -160,9 +164,8 @@ class Multi_Kalman_Tracker():
                 track.s=np.array(track.s)[0]
 
             # 为当前点计算速度(只考虑xy方向的)
-            track.u = np.append(track.u, [track.s - track.points[-1]],axis=0)
-            track.points.append(track.s)
-            track.height.do_filter(self.heights[cluster_id])
+            track.add_frame(track.s,track.s-track.points[-1],self.heights[cluster_id])
+
         #track_update end
 
         #处理当前帧未被处理的点
@@ -171,7 +174,7 @@ class Multi_Kalman_Tracker():
         for j in range(len(self.clusters)):
             if j not in used_clusters:
                 if self.successive_times>self.min_last_time:
-                    self.init_track(self.clusters[j])
+                    self.init_track(self.clusters[j],self.heights[j])
                     self.successive_times=0
                     break
                 else:
@@ -196,4 +199,71 @@ class Multi_Kalman_Tracker():
         else:
             self.predict()
             self.association()
-            self.update()
+            self.update_assigned_tracks()
+
+    #获得每个人的身高
+    def get_each_person_height(self):
+        heights=dict()
+
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
+            height=track.height.get_current_height(self.M)
+            if height is not None:
+                heights[track_id]=height
+
+        return heights
+
+    #获得每个人的速度
+    def get_each_person_velocity(self):
+        velocity=dict()
+
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
+            velocity[track_id]=np.linalg.norm(track.u[-1])
+
+        return velocity
+
+    #获得每个人到雷达板的距离
+    def get_each_person_distance(self):
+        distances=dict()
+
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
+            distances[track_id]=np.linalg.norm(track.points[-1])
+
+        return distances
+
+    #获得每个人的位置
+    def get_each_person_location(self):
+        locations=dict()
+
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
+            location=track.get_location(self.M)
+            if location is not None:
+                locations[track_id]=location
+
+        return locations
+
+    #获得每个人的姿态
+    def get_each_person_posture(self):
+        postures=dict()
+
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
+            posture=track.get_posture(self.M,self.rate)
+            if posture is not None:
+                postures[track_id]=posture
+
+        return postures
+
+
+    #获得每个人的原始身高
+    def get_each_person_raw_height(self):
+        raw_height=dict()
+
+        for track_id in self.tracks:
+            track=self.tracks[track_id]
+            raw_height[track_id]=track.height.origin_height[-1]
+
+        return raw_height
