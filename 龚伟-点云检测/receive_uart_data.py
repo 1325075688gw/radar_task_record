@@ -17,11 +17,11 @@ from collections import OrderedDict
 from queue import Queue
 from copy import deepcopy
 
-sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\杨家辉-点云聚类\src")
+
+sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\杨家辉bak")
 sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\郭泽中-跟踪、姿态识别")
 import analyze_radar_data
 import commo
-import Kalman
 
 queue_for_calculate = Queue()
 
@@ -141,13 +141,13 @@ class uartParserSDK():
             start_time = time.time() * 1000
             data = self.data_port.read(self.bytes_num)
             end_time = time.time() * 1000
-            print("read一帧需要:{0}".format(end_time - start_time))
+            # print("read一帧需要:{0}".format(end_time - start_time))
             start_time = time.time() * 1000
             self.bytes_data += data
             self.bytes_data = self.get_frame(self.bytes_data)
             print("当前帧数：{0}".format(self.frame_num))
             end_time = time.time() * 1000
-            print("解析一帧需要:{0}\n".format(end_time - start_time))
+            # print("解析一帧需要:{0}\n".format(end_time - start_time))
 
     def put_queue_thread(self):
         self.put_queue_th = Thread(target=self.put_queue)
@@ -155,7 +155,7 @@ class uartParserSDK():
 
     def put_queue(self):
         while self.flag:
-            print("queue长度:{0}".format(queue_for_calculate.qsize()))
+            # print("queue_for_calculate长度:{0}".format(queue_for_calculate.qsize()))
             point_cloud_num = 0
             point_cloud_list = []
             cart = queue_for_calculate.get().transpose()
@@ -171,11 +171,14 @@ class uartParserSDK():
             temp["point_num"] = point_cloud_num
             temp["point_list"] = point_cloud_list
             frame_num = "frame_num_" + str(self.frame_num)
-            print("\nlen(value)：{0}".format(self.frame_num))
+            # print("\nlen(value)：{0}".format(self.frame_num))
             frame_dict = {frame_num: temp}
             self.json_data.update(frame_dict)
+            # with commo.condition_for_count:
+            # print("queue_for_count_receive_uart:{0}".format(commo.queue_for_count.qsize()))
             commo.queue_for_count.put(temp)
-            print("queue_for_count_receive：{0}".format(commo.queue_for_count.qsize()))
+            # commo.condition_for_count.notify_all()
+            # commo.condition_for_count.wait()
 
             if self.frame_num == 15000:
                 with open("new_points.json", "w") as file:
@@ -244,7 +247,6 @@ class uartParserSDK():
                     # target index
                     self.parse_target_index(data_in, data_length)
                 data_in = data_in[data_length:]
-
             except Exception as e:
                 print("解析头出错：{0}".format(e))
         return data_in

@@ -4,9 +4,13 @@ import numpy as np
 
 def get_cluster_center(cluster_dict):
 	center_point_list = []
-	for i in cluster_dict:
+	i = 0
+	if len(cluster_dict) == 0:
+		return center_point_list
+	while i <= max(cluster_dict):
 		center_point = np.mean(cluster_dict[i], axis=0)
 		center_point_list.append([center_point[0],center_point[1],center_point[2]])
+		i += 1
 	return center_point_list
 
 def get_frame_points(frame_data):
@@ -17,7 +21,7 @@ def get_frame_points(frame_data):
 		points.append(point)
 	frame_points = {}
 	frame_points[frame_data['frame_num']] = points
-	return frame_data['frame_num'],points
+	return frame_data['frame_num'], points
 
 def get_json_points(filename):
 	'''Read json data and return data in correct format.

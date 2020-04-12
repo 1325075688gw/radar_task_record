@@ -1,7 +1,7 @@
 import json
 import random
 import numpy as np  # 数据结构
-import sklearn.cluster as skc
+from sklearn import cluster
 import math
 import matplotlib.pyplot as plt  # 可视化绘图
 from mpl_toolkits.mplot3d import Axes3D
@@ -72,8 +72,8 @@ def dbscan_official(data,eps,minpts,type='2D'):
 		X = X[:,:2]
 	elif type == '3D':
 		X = X[:,:3]
-	db = skc.DBSCAN(eps=0.25, min_samples=5).fit_predict(X)
-	return db.labels_
+	db = cluster.DBSCAN(eps=0.25, min_samples=5).fit_predict(X)
+	return db
 	
 '''	
 if __name__ == '__main__':	

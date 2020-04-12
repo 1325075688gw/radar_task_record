@@ -3,9 +3,11 @@ import numpy as np
 import heapq
 
 sys.path.append("../郭泽中-跟踪、姿态识别")
+sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\龚伟-点云检测")
 from height_kalman import HeightKalman
 from posture_analyze import Posture
 import Kalman
+import commo
 
 class Person():
 	def __init__(self, points, id):
@@ -22,6 +24,7 @@ class Person():
 		self.height_kal = HeightKalman()  #卡尔曼滤波计算身高
 		self.posture = Posture(5)
 		self.compute_person_attributes()
+		self.frame_num = 0
 		
 	def compute_person_attributes(self):
 		xyz_mean = np.mean(self.points, axis=0)
@@ -32,6 +35,7 @@ class Person():
 		self.z = xyz_mean[2]
 		self.length = xyz_max[0] - xyz_min[0]
 		self.width = xyz_max[1] - xyz_min[1]
+		# self.current_height 通过self.cal_current_height()计算
 		self.cal_current_height()
 		
 		
@@ -73,8 +77,10 @@ class Person():
 
 
 #根据跟踪结果，将点云和人对应起来，并根据点云信息更新人的状态
-def update_people_status(person_dict, cluster_dict, tracker):
+def update_people_status(person_dict, cluster_dict, tracker, frame_num):
 	print("update？")
+	print("tracker:{0}".format(tracker))
+	center = {}
 	for id in tracker.d:
 		#将点云和人对应
 		index = tracker.d[id]
@@ -84,9 +90,16 @@ def update_people_status(person_dict, cluster_dict, tracker):
 			person_dict[id] = Person(cluster_dict[index],id)
 		else:
 			person_dict[id].update(cluster_dict[index])
+		center[id] = person_dict[id]
 	#删除已经不存在的人
 	for id in tracker.deleted_tracks:
 		person_dict.pop(id)
+	temp = []
+	temp["frame_num"] = frame_num
+	temp["center"] = 0
+
+
+	commo.queue_for_gzz.put()
 	people_v_dict = tracker.get_each_person_velocity()
 	if len(people_v_dict) > 0:
 		print(people_v_dict)

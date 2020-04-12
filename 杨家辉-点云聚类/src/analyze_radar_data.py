@@ -43,23 +43,33 @@ def cluster_points():
 		print("queue_for_count长度：{0}".format(commo.queue_for_count.qsize()))
 		frame_data = commo.queue_for_count.get()
 		print("queue_for_count长度2：{0}".format(commo.queue_for_count.qsize()))
+		continue
 		start_time = time.time() * 1000
 		frame_num, points = get_points.get_frame_points(frame_data)
+		print("48行")
+		points_bak = points
 		#point filter
-
+		print("file_y:{0}".format(points))
 		points = points_filter.filter_by_y(points, 0, 10)
+		print("file_doppler:{0}".format(points))
 		points = points_filter.filter_by_dopper(points, 0, 0)
+		print("doppler:{0}".format(points))
 
 		#cluster
 		# tag = cluster_dbscan.dbscan(points,0.25,5,1,'2D')
 		if points == []:
+			print("points为空")
+			print("points_原始数据：{0}".format(points_bak))
 			continue
 		tag = cluster_dbscan.dbscan_official(points, 0.25, 5, '2D')
+		print("tag")
 		cluster_dict = get_points.tag_to_cluster(points, tag)
-		#
+		print("cluster")
 
 		cluster_dict = points_filter.filter_by_noise(cluster_dict)
+		print("noise")
 		cluster_dict = points_filter.filter_by_count_number(cluster_dict,20) #过滤点数过小的类
+		print("number")
 
 		#Identify people
 		end_time = time.time() * 1000
@@ -67,13 +77,12 @@ def cluster_points():
 		#track_begin
 
 		clusters_center = get_points.get_cluster_center(cluster_dict)
+		print("kk")
 
 		tracker.nextFrame(clusters_center, frame_num)
-		print("ggsgdf")
-		
+
 		#根据跟踪结果更新人的信息
-		person_dict = people.update_people_status(person_dict,cluster_dict,tracker)
-		print("ffffffffffsssssssssss")
+		person_dict = people.update_people_status(person_dict,cluster_dict, tracker, frame_num)
 		print("person_dict:{0}".format(person_dict))
 		# if len(person_dict) == 0:
 		# 	continue
