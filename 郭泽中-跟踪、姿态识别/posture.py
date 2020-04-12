@@ -15,7 +15,8 @@ class Posture():
             return None
 
         if self.postures[-M-1]!=self.last_posture:
-            counts=np.bincount(self.postures)
+            counts=np.bincount(self.postures[-M:])
+
             most=np.argmax(counts)
             if counts[most]/M>rate and most==self.postures[-M-1]:
                 self.last_posture=self.postures[-M-1]
@@ -23,19 +24,12 @@ class Posture():
         return self.last_posture
 
 
-    # def get_each_person_posture(self,heights,velocities,distances):
-    #     postures=dict()
-    #
-    #     for track_id in heights:
-    #         postures[track_id]=self.get_posture(heights[track_id],velocities[track_id],distances[track_id])
-    #
-    #     return postures
 
     def cal_posture(self1,height,velocity):
         if velocity>0.033:
             return 4
         else:
-            if height>1.3:
+            if height>1.2:
                 return 1
             elif height>0.4:
                 return 2

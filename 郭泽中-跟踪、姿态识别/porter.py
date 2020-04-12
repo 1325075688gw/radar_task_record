@@ -14,7 +14,7 @@ filepath='new_points_2_6.json'
 file=open(filepath)
 data=json.load(file)
 
-tracker=Multi_Kalman_Tracker(float('inf'),10,-3,3,7)
+tracker=Multi_Kalman_Tracker(float('inf'),30,-3,3,7)
 
 
 fig=plt.figure(figsize=(8,8))
@@ -40,8 +40,6 @@ for frame in data:
     heights=tracker.get_each_person_height()
     raw_heights=tracker.get_each_person_raw_height()
 
-    print(frame,heights,distances,raw_heights)
-    # visual(ax,locations,postures,frame)
-    #
-    # plt.pause(0.001)
-    # plt.cla()
+    visual(ax,locations,postures,frame)
+    plt.pause(0.001)
+    plt.cla()

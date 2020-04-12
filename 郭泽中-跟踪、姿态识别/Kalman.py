@@ -6,7 +6,7 @@ import math
 #v5.0
 class Multi_Kalman_Tracker():
 
-    M=30
+    M=20
     rate=0.5
 
     #初始化
@@ -203,13 +203,15 @@ class Multi_Kalman_Tracker():
 
     #获得每个人的身高
     def get_each_person_height(self):
-        height=dict()
+        heights=dict()
 
         for track_id in self.tracks:
             track=self.tracks[track_id]
-            height[track_id]=track.height.get_height()
+            height=track.height.get_current_height(self.M)
+            if height is not None:
+                heights[track_id]=height
 
-        return height
+        return heights
 
     #获得每个人的速度
     def get_each_person_velocity(self):
