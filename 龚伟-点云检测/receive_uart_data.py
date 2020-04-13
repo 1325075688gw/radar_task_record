@@ -18,7 +18,7 @@ from queue import Queue
 from copy import deepcopy
 
 
-sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\杨家辉bak")
+sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\杨家辉-点云聚类")
 sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\郭泽中-跟踪、姿态识别")
 import analyze_radar_data
 import commo
@@ -296,6 +296,27 @@ class uartParserSDK():
         self.cart[3, :] = self.polar[3, 0:self.detected_point_num]
         self.cart[4, :] = self.polar[4, 0:self.detected_point_num]
         queue_for_calculate.put(deepcopy(self.cart))
+
+    # def polar_to_cart(self, flag, theta, theta_15, theta_30, azimuth, elevation, range2):
+    #     # 以前跑的坐标
+    #     x, y, z = 0,0,0
+    #     if flag == 1:
+    #         x = range2 * math.cos(elevation) * math.sin(azimuth)
+    #         y = range2 * math.cos(elevation) * math.cos(azimuth)
+    #         z = range2 * math.sin(azimuth)
+    #     # 官方demo坐标转换(正确)
+    #     elif flag == 2:
+    #         x = range2 * math.cos(elevation) * math.sin(azimuth)
+    #         y = range2 * math.cos(elevation) * math.cos(azimuth)
+    #         z = range2 * math.sin(elevation)
+    #     # 第二套坐标：官网坐标旋转30度,郭泽中坐标
+    #     elif flag == 3:
+    #         x = range2 * math.cos(theta + elevation - theta_15 ) * math.sin(azimuth - theta_30)
+    #         y = range2 * math.cos(theta + elevation - theta_15) * math.cos(azimuth - theta_30)
+    #         z = -range2 * math.sin(theta + elevation - theta_15)
+    #
+    #     return x, y, z
+
 
     def parse_target_list(self, data_in, data_length):
         self.detected_target_num = int(data_length / target_list_size)

@@ -5,6 +5,8 @@ from matplotlib.patches import Circle
 
 
 import drawcube
+POSTURES_DICT = {1:"站立", 2:"坐着", 3:"躺着", 4:"行走"}
+
 
 def draw_circle(ax,center_point,r):
 	'''Draw a circle on the plot
@@ -47,4 +49,14 @@ def show_for_cluster(cluster_show, fig):
 		ax.legend(loc = 'upper left')
 
 
-
+def show_track(locations, postures, frame_num):
+	plt.xlim(-3, 3)
+	plt.ylim(0, 7)
+	plt.title('第' + str(frame_num) + '帧')
+	plt.plot(0, 0, 'o', label='雷达', markersize=25)
+	for person in locations:
+		location = locations[person]
+		posture = postures[person]
+		plt.plot(location[0], location[1], 'o', label='人' + str(person), markersize=40)
+		plt.text(location[0], location[1], POSTURES_DICT[posture])
+	plt.legend(	markerscale=1.0 / 10)
