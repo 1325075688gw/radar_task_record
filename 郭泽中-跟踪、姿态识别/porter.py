@@ -6,11 +6,12 @@ from matplotlib import pyplot as plt
 
 plt.rcParams['font.family'] = ['sans-serif']
 plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus']=False
 
 '''
 test
 '''
-filepath='new_points_2_6.json'
+filepath='单人_output/站立坐下/new_points_1_10.json'
 file=open(filepath)
 data=json.load(file)
 
@@ -20,6 +21,7 @@ tracker=Multi_Kalman_Tracker(float('inf'),30,-3,3,7)
 fig=plt.figure(figsize=(8,8))
 ax=fig.add_subplot(111)
 plt.ion()
+
 for frame in data:
     point_list=data[frame]
     point_list=np.array(point_list)

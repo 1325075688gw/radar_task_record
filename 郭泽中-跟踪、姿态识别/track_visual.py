@@ -14,5 +14,4 @@ def visual(ax,locations,gestures,frame):
         ax.plot(location[0],location[1],'o',label='人'+str(person),markersize=40)
         ax.text(location[0],location[1],str(gesture))
 
-
     ax.legend(markerscale=1.0/10)
