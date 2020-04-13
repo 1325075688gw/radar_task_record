@@ -52,7 +52,7 @@ def show_cluster_tracker():
 		frame_num, positions, postures = commo.queue_for_show.get()
 		print("frame_num:{0}".format(frame_num))
 		num += 1
-		if num < 5:
+		if num < 4:
 			continue
 		else:
 			num = 0
