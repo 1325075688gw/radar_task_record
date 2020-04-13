@@ -11,7 +11,7 @@ plt.rcParams['axes.unicode_minus']=False
 '''
 test
 '''
-filepath='单人_output/左右走/new_points_3_8_距离2米.json'
+filepath='单人_output/站立坐下/new_points_1_10.json'
 file=open(filepath)
 data=json.load(file)
 
@@ -21,6 +21,7 @@ tracker=Multi_Kalman_Tracker(float('inf'),30,-3,3,7)
 fig=plt.figure(figsize=(8,8))
 ax=fig.add_subplot(111)
 plt.ion()
+
 for frame in data:
     point_list=data[frame]
     point_list=np.array(point_list)
@@ -40,8 +41,6 @@ for frame in data:
     distances=tracker.get_each_person_distance()
     heights=tracker.get_each_person_height()
     raw_heights=tracker.get_each_person_raw_height()
-
-    print(frame,postures,heights,raw_heights,distances)
 
     visual(ax,locations,postures,frame)
 
