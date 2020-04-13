@@ -9,6 +9,8 @@ class Posture():
     def add_posture(self,posture):
         self.postures.append(posture)
 
+        if len(self.postures)>100:
+            del self.postures[0]
 
     def get_posture(self,M,rate):
         if len(self.postures)<M+1:
@@ -16,18 +18,14 @@ class Posture():
 
         if self.postures[-M-1]!=self.last_posture:
             counts=np.bincount(self.postures[-M:])
-
             most=np.argmax(counts)
             if counts[most]/M>rate and most==self.postures[-M-1]:
                 self.last_posture=self.postures[-M-1]
 
         return self.last_posture
 
-
-
-
     def cal_posture(self1,height,velocity):
-        if velocity>0.033:
+        if velocity>0.016:
             return 4
         else:
             if height>1.2:

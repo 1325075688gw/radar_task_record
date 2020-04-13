@@ -6,9 +6,7 @@ import math
 #v5.0
 class Multi_Kalman_Tracker():
 
-
     M=20
-
     rate=0.5
 
     #初始化
@@ -107,7 +105,7 @@ class Multi_Kalman_Tracker():
     def update_unassigned_track(self,track_id):
         track=self.tracks[track_id]
 
-        track.add_real_frame(track.s,[0,0],track.height.s)
+        track.add_frame(track.s,[0,0],track.height.s)
 
     #处理未被分配到点的轨迹
     def deal_unassigned_track(self):
@@ -231,7 +229,8 @@ class Multi_Kalman_Tracker():
 
         for track_id in self.tracks:
             track=self.tracks[track_id]
-            distances[track_id]=np.linalg.norm(track.points[-1])
+            if len(track.points)>=self.M+1:
+                distances[track_id]=np.linalg.norm(track.points[-1-self.M])
 
         return distances
 
@@ -266,6 +265,7 @@ class Multi_Kalman_Tracker():
 
         for track_id in self.tracks:
             track=self.tracks[track_id]
-            raw_height[track_id]=track.height.origin_height[-1]
+            if len(track.height.origin_height)>self.M:
+                raw_height[track_id]=track.height.origin_height[-1-self.M]
 
         return raw_height

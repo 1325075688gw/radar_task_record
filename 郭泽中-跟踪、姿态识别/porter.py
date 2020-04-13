@@ -6,16 +6,16 @@ from matplotlib import pyplot as plt
 
 plt.rcParams['font.family'] = ['sans-serif']
 plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus']=False
 
 '''
 test
 '''
-filepath='new_points_2_6.json'
+filepath='单人_output/左右走/new_points_3_8_距离2米.json'
 file=open(filepath)
 data=json.load(file)
 
 tracker=Multi_Kalman_Tracker(float('inf'),30,-3,3,7)
-
 
 
 fig=plt.figure(figsize=(8,8))
@@ -40,6 +40,8 @@ for frame in data:
     distances=tracker.get_each_person_distance()
     heights=tracker.get_each_person_height()
     raw_heights=tracker.get_each_person_raw_height()
+
+    print(frame,postures,heights,raw_heights,distances)
 
     visual(ax,locations,postures,frame)
 

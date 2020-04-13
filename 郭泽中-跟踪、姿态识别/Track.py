@@ -22,23 +22,27 @@ class Track():
         self.add_height(height,np.linalg.norm(position))
         self.add_posture(self.height.get_height(),np.linalg.norm(speed),np.linalg.norm(position))
 
-    def add_real_frame(self,position,speed,height):
-        self.add_position(position)
-        self.add_speed(speed)
-        self.add_real_height(height)
-        self.add_posture(self.height.get_height(), np.linalg.norm(speed), np.linalg.norm(position))
+    # def add_real_frame(self,position,speed,height):
+    #     self.add_position(position)
+    #     self.add_speed(speed)
+    #     self.add_real_height(height)
+    #     self.add_posture(self.height.get_height(), np.linalg.norm(speed), np.linalg.norm(position))
 
     def add_position(self,position):
         self.points.append(position)
+        if len(self.points)>100:
+            del self.points[0]
 
     def add_speed(self,speed):
         self.u=np.append(self.u,[speed],axis=0)
+        if len(self.u)>100:
+            self.u=np.delete(self.u,0,axis=0)
 
     def add_height(self,height,distance):
         self.height.add_height(height,distance)
 
-    def add_real_height(self,height):
-        self.height.add_real_height(height)
+    # def add_real_height(self,height):
+    #     self.height.add_real_height(height)
 
     def add_posture(self,height,velocity,distance):
         posture=self.posture.cal_posture(height,velocity)
