@@ -25,7 +25,7 @@ class Posture():
         return self.last_posture
 
     def cal_posture(self1,height,velocity):
-        if velocity>0.016:
+        if velocity>0.033:
             return 4
         else:
             if height>1.2:

@@ -11,12 +11,8 @@ import math
 
 #v5.0
 class Multi_Kalman_Tracker():
-
-    M=20
-    rate=0.5
-
     #初始化
-    def __init__(self,G,min_last_time,xmin,xmax,ymax):
+    def __init__(self,G,min_in_last_times,min_out_last_times,M,rate,xmin,xmax,ymax):
         self.measurementMatrix=np.array([[1, 0,], [0, 1]])    #H
         self.transitionMatrix=np.array([[1, 0], [0, 1]])  #状态转移矩阵
         self.processNoiseCov=np.array([[1, 0], [0, 1]]) * 0.03    #过程噪声矩阵
@@ -26,13 +22,17 @@ class Multi_Kalman_Tracker():
         self.deleted_tracks = []  # 在这一帧中被删除的轨迹id的集合
         self.clusters = []  # 当前帧中的点
         self.not_detected_times=dict()
+        self.heights=[]    #当前帧中的每个人的身高
 
         self.frame = 0  # 当前帧号
         self.successive_times = 0  # 用于判断是否生成新轨迹
         self.plength = 2
+        self.max_id=1
 
-        self.heights=[]    #当前帧中的每个人的身高
-        self.min_last_time=min_last_time
+        self.M=M
+        self.rate=rate
+        self.min_in_last_times=min_in_last_times
+        self.min_out_last_times=min_out_last_times
         self.G=G    #同一条轨迹在相邻两帧之间最大的移动距离
         self.xmin=xmin  #空间最小横向坐标
         self.xmax=xmax  #空间最大横向坐标
@@ -49,9 +49,10 @@ class Multi_Kalman_Tracker():
 
     #初始化轨迹
     def init_track(self,s,height):
-        track=Track(self.track_num,s,self.processNoiseCov,self.frame,height)
-        self.tracks[self.track_num]=track
-        self.not_detected_times[self.track_num]=0
+        track=Track(self.max_id,s,self.processNoiseCov,self.frame,height)
+        self.tracks[self.max_id]=track
+        self.not_detected_times[self.max_id]=0
+        self.max_id+=1
         self.track_num+=1
 
     #预测每一条轨迹在下一帧中的位置
@@ -74,7 +75,7 @@ class Multi_Kalman_Tracker():
         track_ids=list(self.tracks.keys())
 
         for i in range(self.track_num):
-            if col_ind[i]<len(self.clusters) and distance[i][col_ind[i]]<self.G:
+            if col_ind[i]<len(self.clusters) and distance[i][col_ind[i]]<self.G+0.033*self.not_detected_times[track_ids[i]]:
                 self.d[track_ids[i]]=col_ind[i]
 
     #更新未被分配到点的轨迹
@@ -93,13 +94,18 @@ class Multi_Kalman_Tracker():
                 #若上一帧中轨迹位于边缘
                 if self.is_at_edge(track.s):
                     self.not_detected_times[track_id]+=1
-                    if self.not_detected_times[track_id]>self.min_last_time:
+                    if self.not_detected_times[track_id]>self.min_out_last_times:
                         to_be_deleted.append(track_id)
                     else:
                         self.update_unassigned_track(track_id)
                 else:
-                    self.update_unassigned_track(track_id)
-                    self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-1)
+                    self.not_detected_times[track_id]+=1
+                    if self.not_detected_times[track_id]>self.min_out_last_times*1.5:
+                        to_be_deleted.append(track_id)
+                    else:
+                        self.update_unassigned_track(track_id)
+            else:
+                self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-1)
 
         for track_id in to_be_deleted:
             self.delete_track(track_id)
@@ -149,7 +155,7 @@ class Multi_Kalman_Tracker():
         if_set_zero=True
         for j in range(len(self.clusters)):
             if j not in used_clusters:
-                if self.successive_times>self.min_last_time:
+                if self.successive_times>self.min_in_last_times:
                     self.init_track(self.clusters[j],self.heights[j])
                     self.successive_times=0
                     break
@@ -236,7 +242,7 @@ class Multi_Kalman_Tracker():
             track=self.tracks[track_id]
             height=track.height.get_current_height(self.M)
             if height is not None:
-                heights[track_id]=height
+                heights[track_id]=round(height,2)
 
         return heights
 
@@ -292,6 +298,6 @@ class Multi_Kalman_Tracker():
         for track_id in self.tracks:
             track=self.tracks[track_id]
             if len(track.height.origin_height)>self.M:
-                raw_height[track_id]=track.height.origin_height[-1-self.M]
+                raw_height[track_id]=round(track.height.origin_height[-1-self.M],2)
 
         return raw_height

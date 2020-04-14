@@ -25,6 +25,12 @@ class Height():
     def get_height(self):
         return self.height[-1]
 
+    def get_current_height(self,M):
+        if len(self.height)<M+1:
+            return None
+
+        return self.height[-M-1]
+
     def predict(self):
         self.s_=self.s
         self.P_=self.P+self.processNoiseCov
