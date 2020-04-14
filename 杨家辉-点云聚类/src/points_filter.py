@@ -7,7 +7,7 @@ class Points_Filter():
 	def filter_by_dopper(self, frame_data):
 		point_list = []
 		for point_dict in frame_data['point_list']:
-			if point_dict['dopper'] != self.del_dopper:
+			if point_dict['doppler'] != self.del_dopper:
 				point_list.append(point_dict)
 		frame_data['point_list'] = point_list
 		frame_data['point_num'] = len(point_list)
