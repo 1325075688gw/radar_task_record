@@ -11,11 +11,11 @@ plt.rcParams['axes.unicode_minus']=False
 '''
 test
 '''
-filepath='单人_output/站立坐下/new_points_1_10.json'
+filepath= 'new_points_transfer_单人来回走4次_2-5米_output_v2.json'
 file=open(filepath)
 data=json.load(file)
 
-tracker=Multi_Kalman_Tracker(float('inf'),30,-3,3,7)
+tracker=Multi_Kalman_Tracker(0.5,20,-3,3,7)
 
 
 fig=plt.figure(figsize=(8,8))

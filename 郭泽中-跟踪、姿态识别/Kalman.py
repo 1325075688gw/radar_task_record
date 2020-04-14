@@ -3,6 +3,12 @@ from Track import Track
 from hungary import hungary
 import math
 
+'''
+    NOTE:
+        后端的运算是实时的，使用get_each_person_XXX方法获得的数据都是M帧前的，
+        也就是说会有一个人为的M帧的延迟
+'''
+
 #v5.0
 class Multi_Kalman_Tracker():
 
@@ -55,22 +61,6 @@ class Multi_Kalman_Tracker():
             track.s_=np.matmul(self.transitionMatrix,track.s)+np.matmul(self.B,track.u.mean(axis=0))
             track.P_=np.matmul(np.matmul(self.transitionMatrix,track.P),self.transitionMatrix.T)+self.processNoiseCov
 
-    #计算每条轨迹与当前帧中每个点之间的距离
-    def cal_distance(self):
-        # 计算得到每条轨迹的预测位置与聚类得到的点的距离
-        distance = np.array([])
-        for track_id in self.tracks:
-            track = self.tracks[track_id]
-            row = np.array([])
-            for j in range(len(self.clusters)):
-                row = np.append(row, [np.linalg.norm(self.clusters[j] - track.s_)], axis=0)
-            if distance.size == 0:
-                distance = np.array([row])
-            else:
-                distance = np.append(distance, [row], axis=0)
-
-        return distance
-
     #使用匈牙利算法为轨迹分配点
     def association(self):
 
@@ -86,20 +76,6 @@ class Multi_Kalman_Tracker():
         for i in range(self.track_num):
             if col_ind[i]<len(self.clusters) and distance[i][col_ind[i]]<self.G:
                 self.d[track_ids[i]]=col_ind[i]
-
-    #判断轨迹是否位于边缘
-    def is_at_edge(self,s):
-        #判断是否位于给定空间边缘
-        if s[0]<self.xmin+0.2 or s[0]>self.xmax-0.2 or s[1]>self.ymax-0.2:
-            return True
-        #判断是否位于雷达探测范围边缘
-        if s[1]<0.2:
-            return True
-        if s[0]!=0:
-            if s[1]/math.sqrt(3)-0.2<abs(s[0]):
-                return True
-
-        return False
 
     #更新未被分配到点的轨迹
     def update_unassigned_track(self,track_id):
@@ -191,8 +167,7 @@ class Multi_Kalman_Tracker():
         self.deleted_tracks=[]
         #帧号+1
         self.frame=frame
-        self.clusters=clusters
-        self.heights=heights
+        self.clusters,self.heights=self.preprocess_clusters(clusters,heights)
         #判断当前是否有轨迹存在
         if self.track_num==0:
             self.init_tracks()
@@ -200,6 +175,58 @@ class Multi_Kalman_Tracker():
             self.predict()
             self.association()
             self.update_assigned_tracks()
+
+    #判断轨迹是否位于边缘
+    def is_at_edge(self,s):
+        #判断是否位于给定空间边缘
+        if s[0]<self.xmin+0.2 or s[0]>self.xmax-0.2 or s[1]>self.ymax-0.2:
+            return True
+        #判断是否位于雷达探测范围边缘
+        if s[1]<0.2:
+            return True
+        if abs(s[0])>s[1]/math.sqrt(3)-0.2:
+            return True
+        return False
+
+    #判断点是否已经超出了给定范围
+    def is_out_area(self,s):
+        # 判断是否位于给定空间之外
+        if s[0] < self.xmin or s[0] > self.xmax or s[1] > self.ymax:
+            return True
+        # 判断是否位于雷达探测范围之外
+        if s[1] < 0:
+            return True
+        if abs(s[0]) > s[1] / math.sqrt(3) +0.2:
+            return True
+        return False
+
+    #对输入聚类结果进行预处理
+    def preprocess_clusters(self,clusters,heights):
+        new_clusters=[]
+        new_heights=[]
+
+        for cluster,height in zip(clusters,heights):
+            if not self.is_out_area(cluster):
+                new_clusters.append(cluster)
+                new_heights.append(height)
+
+        return new_clusters,new_heights
+
+    # 计算每条轨迹与当前帧中每个点之间的距离
+    def cal_distance(self):
+        # 计算得到每条轨迹的预测位置与聚类得到的点的距离
+        distance = np.array([])
+        for track_id in self.tracks:
+            track = self.tracks[track_id]
+            row = np.array([])
+            for j in range(len(self.clusters)):
+                row = np.append(row, [np.linalg.norm(self.clusters[j] - track.s_)], axis=0)
+            if distance.size == 0:
+                distance = np.array([row])
+            else:
+                distance = np.append(distance, [row], axis=0)
+
+        return distance
 
     #获得每个人的身高
     def get_each_person_height(self):
@@ -257,7 +284,6 @@ class Multi_Kalman_Tracker():
                 postures[track_id]=posture
 
         return postures
-
 
     #获得每个人的原始身高
     def get_each_person_raw_height(self):
