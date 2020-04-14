@@ -43,6 +43,5 @@ for frame in data:
     raw_heights=tracker.get_each_person_raw_height()
 
     visual(ax,locations,postures,frame)
-
     plt.pause(0.001)
     plt.cla()
