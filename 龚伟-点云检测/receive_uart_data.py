@@ -17,13 +17,14 @@ from collections import OrderedDict
 from queue import Queue
 from copy import deepcopy
 
-sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\杨家辉-点云聚类\src")
+
+sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\杨家辉-点云聚类")
 sys.path.append(r"C:\Users\Administrator\Documents\Tencent Files\3257266576\FileRecv\radar_task_record\郭泽中-跟踪、姿态识别")
 import analyze_radar_data
 import commo
-import Kalman
 
-queue_for_calculate = Queue()
+queue_for_calculate_transfer = Queue()
+queue_for_calculate_not_transfer = Queue()
 
 tlv = "2I"
 tlv_struct = struct.Struct(tlv)
@@ -72,12 +73,14 @@ class RawPoint:
 
 class uartParserSDK():
     def __init__(self, data_port="COM4", user_port="COM3"):
-        self.json_data = OrderedDict()
+        self.json_data_not_transfer = OrderedDict()
+        self.json_data_transfer = OrderedDict()
         self.magic_word = 0x708050603040102
         self.bytes_data = bytes(1)
         self.max_points = 500
         self.polar = np.zeros((5, self.max_points))
-        self.cart = np.zeros((5, self.max_points))
+        self.cart_transfer = np.zeros((5, self.max_points))
+        self.cart_not_transfer = np.zeros((5, self.max_points))
         self.detected_target_num = 0
         self.detected_point_num = 0
         self.target_list = np.ones((10, 20)) * (-1)
@@ -93,6 +96,11 @@ class uartParserSDK():
         self.receive_data_th = 0
         self.flag = 1
         self.missed_frame_num = 0
+        self.theta = math.radians(17)
+        self.theta_diff = math.radians(90-17)
+        self.theta_30 = math.radians(30)
+        self.theta_15 = math.radians(15)
+        self.radar_z = 1.75
 
         '''
         port=串口号, 
@@ -138,16 +146,16 @@ class uartParserSDK():
 
     def receive_data(self):
         while self.flag:
-            start_time = time.time() * 1000
+            # start_time = time.time() * 1000
             data = self.data_port.read(self.bytes_num)
-            end_time = time.time() * 1000
-            print("read一帧需要:{0}".format(end_time - start_time))
-            start_time = time.time() * 1000
+            # end_time = time.time() * 1000
+            # print("read一帧需要:{0}".format(end_time - start_time))
+            # start_time = time.time() * 1000
             self.bytes_data += data
             self.bytes_data = self.get_frame(self.bytes_data)
-            print("当前帧数：{0}".format(self.frame_num))
-            end_time = time.time() * 1000
-            print("解析一帧需要:{0}\n".format(end_time - start_time))
+            # print("当前帧数：{0}".format(self.frame_num))
+            # end_time = time.time() * 1000
+            # print("解析一帧需要:{0}\n".format(end_time - start_time))
 
     def put_queue_thread(self):
         self.put_queue_th = Thread(target=self.put_queue)
@@ -155,11 +163,12 @@ class uartParserSDK():
 
     def put_queue(self):
         while self.flag:
-            print("queue长度:{0}".format(queue_for_calculate.qsize()))
+            # print("queue_for_calculate长度:{0}".format(queue_for_calculate.qsize()))
+            """
             point_cloud_num = 0
             point_cloud_list = []
-            cart = queue_for_calculate.get().transpose()
-            for index, value in enumerate(cart):
+            cart_transfer = queue_for_calculate_transfer.get().transpose()
+            for index, value in enumerate(cart_transfer):
                 # raw_point = RawPoint(index+1, value[0], value[1], value[2], value[3], value[4]).__dict__
                 point = Point(index + 1, value[0], value[1], value[2], value[3], value[4]).__dict__
                 point_cloud_list.append(point)
@@ -171,15 +180,46 @@ class uartParserSDK():
             temp["point_num"] = point_cloud_num
             temp["point_list"] = point_cloud_list
             frame_num = "frame_num_" + str(self.frame_num)
-            print("\nlen(value)：{0}".format(self.frame_num))
+            # print("\nlen(value)：{0}".format(self.frame_num))
             frame_dict = {frame_num: temp}
-            self.json_data.update(frame_dict)
-            commo.queue_for_count.put(temp)
-            print("queue_for_count_receive：{0}".format(commo.queue_for_count.qsize()))
+            self.json_data_transfer.update(frame_dict)
+            # with commo.condition_for_count:
+            # print("queue_for_count_receive_uart:{0}".format(commo.queue_for_count.qsize()))
+            # print("frame_num:{0}".format(self.frame_num))
+            commo.queue_for_count_transfer.put(temp)
+            """
 
-            if self.frame_num == 15000:
-                with open("new_points.json", "w") as file:
-                    json.dump(self.json_data, file)
+            point_cloud_num = 0
+            point_cloud_list = []
+            cart_not_transfer = queue_for_calculate_not_transfer.get().transpose()
+            for index, value in enumerate(cart_not_transfer):
+                # raw_point = RawPoint(index+1, value[0], value[1], value[2], value[3], value[4]).__dict__
+                point = Point(index + 1, value[0], value[1], value[2], value[3], value[4]).__dict__
+                point_cloud_list.append(point)
+                point_cloud_num += 1
+            temp = dict()
+            t = time.time() * 1000
+            temp["frame_num"] = self.frame_num
+            temp["time_stamp"] = int(round(t))
+            temp["point_num"] = point_cloud_num
+            temp["point_list"] = point_cloud_list
+            frame_num = "frame_num_" + str(self.frame_num)
+            # print("\nlen(value)：{0}".format(self.frame_num))
+            frame_dict = {frame_num: temp}
+            self.json_data_not_transfer.update(frame_dict)
+            # with commo.condition_for_count:
+            # print("queue_for_count_receive_uart:{0}".format(commo.queue_for_count.qsize()))
+            # print("frame_num:{0}".format(self.frame_num))
+            commo.queue_for_count_not_transfer.put(temp)
+
+            # commo.condition_for_count.notify_all()
+            # commo.condition_for_count.wait()
+
+            if self.frame_num == 10000:
+                with open("new_points_not_transfer.json", "w") as file:
+                    json.dump(self.json_data_not_transfer, file)
+                with open("new_points_transfer.json", "w") as file:
+                    json.dump(self.json_data_transfer, file)
                 self.flag = 0
                 print("丢失{0}帧 ".format(self.missed_frame_num))
                 exit()
@@ -199,7 +239,8 @@ class uartParserSDK():
 
     def get_frame(self, data_in):
         self.polar = np.zeros((5, self.max_points))
-        self.cart = np.zeros((5, self.max_points))
+        self.cart_transfer = np.zeros((5, self.max_points))
+        self.cart_not_transfer = np.zeros((5, self.max_points))
         self.target = np.zeros((10, 20))
         self.detected_target_num = 0
         self.detected_point_num = 0
@@ -244,7 +285,6 @@ class uartParserSDK():
                     # target index
                     self.parse_target_index(data_in, data_length)
                 data_in = data_in[data_length:]
-
             except Exception as e:
                 print("解析头出错：{0}".format(e))
         return data_in
@@ -283,17 +323,29 @@ class uartParserSDK():
                 break
         self.polar_to_cart()
     def polar_to_cart(self):
-        self.cart = np.empty((5, self.detected_point_num))
+        self.cart_transfer = np.empty((5, self.detected_point_num))
+        self.cart_not_transfer = np.empty((5, self.detected_point_num))
         for i in range(0, self.detected_point_num):
-            # z
-            self.cart[2, i] = self.polar[0, i] * math.sin(self.polar[2, i])
             # x
-            self.cart[0, i] = self.polar[0, i] * math.cos(self.polar[2, i]) * math.sin(self.polar[1, i])
+            self.cart_not_transfer[0, i] = self.polar[0, i] * math.cos(self.polar[2, i]) * math.sin(self.polar[1, i])
             # y
-            self.cart[1, i] = self.polar[0, i] * math.cos(self.polar[2, i]) * math.cos(self.polar[1, i])
-        self.cart[3, :] = self.polar[3, 0:self.detected_point_num]
-        self.cart[4, :] = self.polar[4, 0:self.detected_point_num]
-        queue_for_calculate.put(deepcopy(self.cart))
+            self.cart_not_transfer[1, i] = self.polar[0, i] * math.cos(self.polar[2, i]) * math.cos(self.polar[1, i])
+            # z
+            self.cart_not_transfer[2, i] = self.polar[0, i] * math.sin(self.polar[2, i])
+
+            # x
+            self.cart_transfer[0, i] = self.polar[0, i] * math.cos(self.theta - self.polar[2, i] + self.theta_15) * math.sin(self.polar[1, i] - self.theta_30)
+            # y
+            self.cart_transfer[1, i] = self.polar[0, i] * math.cos(self.theta - self.polar[2, i] + self.theta_15) * math.cos(self.polar[1, i] - self.theta_30)
+            # z
+            self.cart_transfer[2, i] = self.radar_z - self.polar[0, i] * math.sin(self.theta - self.polar[2, i] + self.theta_15)
+        self.cart_transfer[3, :] = self.polar[3, 0:self.detected_point_num]
+        self.cart_transfer[4, :] = self.polar[4, 0:self.detected_point_num]
+
+        self.cart_not_transfer[3, :] = self.polar[3, 0:self.detected_point_num]
+        self.cart_not_transfer[4, :] = self.polar[4, 0:self.detected_point_num]
+        queue_for_calculate_transfer.put(deepcopy(self.cart_transfer))
+        queue_for_calculate_not_transfer.put(deepcopy(self.cart_not_transfer))
 
     def parse_target_list(self, data_in, data_length):
         self.detected_target_num = int(data_length / target_list_size)

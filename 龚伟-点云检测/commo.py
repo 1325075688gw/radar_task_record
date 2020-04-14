@@ -4,8 +4,14 @@
 
 # -*- coding: utf-8 -*-
 from queue import Queue
-import matplotlib.pyplot as plt
-a = 1
-queue_for_count = Queue()
-queue_for_show = Queue()
+from threading import Condition
+
+
+queue_for_count_not_transfer = Queue()
+queue_for_count_transfer = Queue()
+queue_for_show_not_transfer = Queue()
+queue_for_show_transfer = Queue()
+
+condition_for_count = Condition()
+condition_for_show = Condition()
 # fig = plt.figure(figsize=(10, 10))
