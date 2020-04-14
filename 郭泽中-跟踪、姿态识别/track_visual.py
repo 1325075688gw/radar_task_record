@@ -1,6 +1,20 @@
 from matplotlib import pyplot as plt
+import numpy as np
+import math
 
 def visual(ax,locations,gestures,frame):
+    angle = np.arange(math.pi / 3, math.pi *2/ 3, 0.1)
+
+    x = np.cos(angle)*7
+    y = np.sin(angle)*7
+
+    x=np.insert(x,0,0)
+    y=np.insert(y,0,0)
+    x=np.insert(x,len(x),0)
+    y=np.insert(y,len(y),0)
+
+    ax.plot(x, y)
+
     ax.set_xlim(-3,3)
     ax.set_ylim(0,7)
 
