@@ -6,6 +6,8 @@ from queue import Queue
 import copy
 import matplotlib.pyplot as plt
 import numpy as np
+import time
+import json
 
 from cluster import Cluster
 from points_filter import Points_Filter
@@ -16,38 +18,67 @@ from height import Height
 
 cluster_show_queue = Queue()
 
+def save_result(save_data):
+	json_str = json.dumps(save_data)
+	with open('./data/output/one_people_updown_v1.json', 'w') as json_file:
+		json_file.write(json_str)
 
 def test_point_filter():
+	#
 	p_filter = Points_Filter(z_min = 0, z_max = 2.5, del_dopper = 0)
 	cl = Cluster(eps = 0.25,minpts = 5,type='2D',min_cluster_count = 20)
 	all_height = []
-	while 1:
+	save_data = {}
+	dist = []
+	point_num = []
+	while not frame_data_queue.empty():
 		frame_data = frame_data_queue.get()
 		p_filter.run_filter(frame_data)
 		cl.do_clsuter(frame_data)
+		#cl.show_cluster_dopper()
 		frame_cluster_dict = copy.deepcopy(cl.frame_cluster_dict)
+		out_list = []
+		#people_height_list = Height.get_people_height_list(cl)
+		people_height_list = cl.get_height_list()
+		center_point_list = cl.get_cluster_center_point_list()
+		for height,center_point in zip(people_height_list,center_point_list):
+			tem_data = [center_point[0],center_point[1],height]
+			out_list.append(tem_data)
+		save_data[cl.frame_cluster_dict['frame_num']] = out_list
 		
-
-		people_height_list = Height.get_people_height_list(cl)
-		'''
-		if people_height_list != []:
-			height_dict = {}
-			height_dict[cl.get_height_list()[0]] = people_height_list[0]
-			print(height_dict)
-			all_height.append(height_dict)
-			'''
+		print("帧号",frame_cluster_dict['frame_num'])
+		if frame_cluster_dict['cluster'] == []:
+			print("点数:",0)
+		else:
+			dist.append(frame_cluster_dict['cluster'][0]['points_num'])
+			point_num.append(frame_cluster_dict['cluster'][0]['center_point'][1])
+			print("点数",frame_cluster_dict['cluster'][0]['points_num'])
+			print("距离y",frame_cluster_dict['cluster'][0]['center_point'][1])
+		#for cluster in frame_cluster_dict['cluster']:
+		#	print("均值",cluster['center_point'][2])
+		#	print("方差",cluster['var_z'])
+		cluster_show_queue.put(frame_cluster_dict)
 		#print(np.mean(all_height))
 		#print(np.var(all_height))
-		cluster_show_queue.put(frame_cluster_dict)
 		#print(cl.get_cluster_center_point_list())
 		#print(cl.get_height_list())
+	save_result(save_data)
+
+	'''
+	plt.figure()
+	#在当前绘图对象进行绘图（两个参数是x,y轴的数据）
+	plt.plot(dist,point_num,'.')
+	plt.pause(60)
+	'''
 
 
 if __name__ == "__main__":
 	t1 = threading.Thread(target=read_data)
 	t2 = threading.Thread(target=test_point_filter)
 	t1.start()
+	time.sleep(2)
 	t2.start()
+
 	fig = plt.figure(figsize=(10,10))
 	while 1:
 		plt.clf()
@@ -55,4 +86,15 @@ if __name__ == "__main__":
 		show.show_for_cluster(cluster_show,fig)
 		plt.title("第%d帧"%cluster_show['frame_num'])
 		plt.pause(0.04)
+		#if cluster_show['frame_num'] >865:
+		#	plt.pause(15)
+
+	'''
+		for cluster in cluster_show['cluster']:
+			if len(cluster['points']) > 100:
+				plt.pause(15)
+	'''
+
+		
+
 

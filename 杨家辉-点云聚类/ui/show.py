@@ -40,7 +40,7 @@ def show_for_cluster(cluster_show, fig):
 	ax.set_xlabel('x')
 	ax.set_ylabel('y')
 	plt.xlim(-3,3)
-	plt.ylim(0,6)
+	plt.ylim(0,8)
 	#plt.title("people_count")
 	plt.plot(label="")
 	if i > 0:
