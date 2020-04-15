@@ -144,19 +144,18 @@ class Multi_Kalman_Tracker():
             if track_id not in self.d:
                 #若上一帧中轨迹位于边缘
                 if self.is_at_edge(track.s):
-                    self.not_detected_times[track_id] += 2
+                    self.not_detected_times[track_id] += 1
                     if self.not_detected_times[track_id]>self.min_out_last_times:
                         to_be_deleted.append(track_id)
                     else:
                         self.update_unassigned_track(track_id)
                 else:
-                    self.not_detected_times[track_id] += 1
                     if self.not_detected_times[track_id]>self.min_out_last_times*1.5:
                         to_be_deleted.append(track_id)
                     else:
                         self.update_unassigned_track(track_id)
             else:
-                self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-3)
+                self.not_detected_times[track_id]=max(0,self.not_detected_times[track_id]-2)
 
         for track_id in to_be_deleted:
             self.delete_track(track_id)

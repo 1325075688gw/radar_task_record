@@ -2,7 +2,7 @@ import numpy as np
 
 class Posture():
 
-    speed_line=0.033
+    speed_line=0.1
 
     def __init__(self):
         self.postures=[1]
@@ -33,7 +33,7 @@ class Posture():
         return self.last_posture
 
     def cal_posture(self1,height,velocity):
-        if velocity>0.033:
+        if velocity>0.024:
             return 4
         else:
             if height>1.2:

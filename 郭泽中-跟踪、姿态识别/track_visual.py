@@ -18,14 +18,12 @@ def visual(ax,locations,gestures,frame):
     ax.set_xlim(-3,3)
     ax.set_ylim(0,8)
 
-    ax.set_title('第'+str(frame)+'帧')
-    ax.plot(0,0,'o',label='雷达',markersize=40)
+    ax.set_title('当前帧有'+str(len(gestures))+'个人')
+    ax.plot(0,0,'o',markersize=40)
 
     for person in locations:
         location=locations[person]
         gesture=gestures[person]
 
-        ax.plot(location[0],location[1],'o',label='人'+str(person),markersize=40)
+        ax.plot(location[0],location[1],'o',markersize=40)
         ax.text(location[0],location[1],str(gesture))
-
-    ax.legend(markerscale=1.0/10)
