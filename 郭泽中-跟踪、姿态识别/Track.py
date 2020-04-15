@@ -37,7 +37,7 @@ class Track():
 
     def add_posture(self,height,velocity):
         posture=self.posture.cal_posture(height,velocity)
-        self.posture.add_posture(posture)
+        self.posture.add_posture(posture,velocity)
 
     def get_posture(self,M,rate):
         return self.posture.get_posture(M,rate)

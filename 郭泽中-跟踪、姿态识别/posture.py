@@ -2,19 +2,27 @@ import numpy as np
 
 class Posture():
 
+    speed_line=0.033
+
     def __init__(self):
         self.postures=[1]
+        self.velocities=[0]
         self.last_posture=1
 
-    def add_posture(self,posture):
+    def add_posture(self,posture,velocity):
         self.postures.append(posture)
+        self.velocities.append(velocity)
 
         if len(self.postures)>100:
             del self.postures[0]
+            del self.velocities[0]
 
     def get_posture(self,M,rate):
         if len(self.postures)<M+1:
             return None
+
+        if np.mean(self.velocities)>self.speed_line:
+            return 4
 
         if self.postures[-M-1]!=self.last_posture:
             counts=np.bincount(self.postures[-M:])

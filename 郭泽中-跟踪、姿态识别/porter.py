@@ -11,7 +11,7 @@ plt.rcParams['axes.unicode_minus']=False
 '''
 test
 '''
-filepath= 'new_points_cart_transfer_one_pp_2-6_5m_v1(1).json'
+filepath= 'gzz_two_pp_1_2_5_two_left_right.json'
 file=open(filepath)
 data=json.load(file)
 
