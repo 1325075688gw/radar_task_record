@@ -11,16 +11,18 @@ plt.rcParams['axes.unicode_minus']=False
 '''
 test
 '''
-filepath= 'new_points_transfer_单人来回走4次_2-5米_output_v2.json'
+filepath= 'new_points_cart_transfer_5m_v4.json'
 file=open(filepath)
 data=json.load(file)
 
-tracker=Multi_Kalman_Tracker(0.5,20,-3,3,7)
+tracker=Multi_Kalman_Tracker(0.5,20,50,20,0.5,-3,3,8)
 
 
 fig=plt.figure(figsize=(8,8))
 ax=fig.add_subplot(111)
 plt.ion()
+
+all_heights=[]
 
 for frame in data:
     point_list=data[frame]
@@ -42,6 +44,12 @@ for frame in data:
     heights=tracker.get_each_person_height()
     raw_heights=tracker.get_each_person_raw_height()
 
-    visual(ax,locations,postures,frame)
+    for id in heights:
+        all_heights.append(heights[id])
+
+    visual(ax,locations,heights,frame)
+
     plt.pause(0.001)
     plt.cla()
+
+print(np.mean(all_heights),np.std(all_heights))

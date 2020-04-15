@@ -5,8 +5,8 @@ import math
 def visual(ax,locations,gestures,frame):
     angle = np.arange(math.pi / 3, math.pi *2/ 3, 0.1)
 
-    x = np.cos(angle)*7
-    y = np.sin(angle)*7
+    x = np.cos(angle)*8
+    y = np.sin(angle)*8
 
     x=np.insert(x,0,0)
     y=np.insert(y,0,0)
@@ -16,7 +16,7 @@ def visual(ax,locations,gestures,frame):
     ax.plot(x, y)
 
     ax.set_xlim(-3,3)
-    ax.set_ylim(0,7)
+    ax.set_ylim(0,8)
 
     ax.set_title('第'+str(frame)+'帧')
     ax.plot(0,0,'o',label='雷达',markersize=40)
