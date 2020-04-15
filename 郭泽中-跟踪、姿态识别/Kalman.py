@@ -82,7 +82,7 @@ class Multi_Kalman_Tracker():
     #使用匈牙利算法为轨迹分配点
     def association(self):
 
-        if len(self.clusters)==0:
+        if len(self.clusters)==0 or len(self.tracks)==0:
             return
 
         distance=self.cal_distance()
@@ -97,7 +97,7 @@ class Multi_Kalman_Tracker():
 
     def pre_association(self):
 
-        if len(self.unused_clusters)==0:
+        if len(self.unused_clusters)==0 or len(self.pre_tracks)==0:
             return
 
         distance=self.cal_pre_distance()
@@ -170,12 +170,13 @@ class Multi_Kalman_Tracker():
                 self.pre_not_detected_times[track_id] += 1
                 self.update_unassigned_pre_track(track_id)
 
-                if self.frame-track.first_frame>self.M:
+                if self.frame - track.first_frame > self.min_in_last_times:
                     to_be_deleted.append(track_id)
-                    if (self.M-self.pre_not_detected_times[track_id])/self.M>self.rate:
-                        self.tracks[self.max_id]=self.pre_tracks[track_id]
-                        self.not_detected_times[self.max_id]=0
-                        self.max_id+=1
+                    if (self.min_in_last_times - self.pre_not_detected_times[
+                        track_id]) / self.min_in_last_times > self.rate:
+                        self.tracks[self.max_id] = self.pre_tracks[track_id]
+                        self.not_detected_times[self.max_id] = 0
+                        self.max_id += 1
 
         for track_id in to_be_deleted:
             self.delete_pre_track(track_id)
@@ -229,6 +230,7 @@ class Multi_Kalman_Tracker():
     def update_assigned_pre_tracks(self):
 
         used_clusters=[]
+        to_be_deleted=[]
 
         for track_id in self.pre_tracks:
             track=self.pre_tracks[track_id]
@@ -253,6 +255,17 @@ class Multi_Kalman_Tracker():
             # 为当前点计算速度(只考虑xy方向的)
             track.add_frame(track.s,track.s-track.points[-1],self.unused_heights[cluster_id])
 
+            if self.frame - track.first_frame > self.min_in_last_times:
+                to_be_deleted.append(track_id)
+                if (self.min_in_last_times - self.pre_not_detected_times[
+                    track_id]) / self.min_in_last_times > self.rate:
+                    self.tracks[self.max_id] = self.pre_tracks[track_id]
+                    self.not_detected_times[self.max_id] = 0
+                    self.max_id += 1
+
+        for track_id in to_be_deleted:
+            self.delete_pre_track(track_id)
+
         #track_update end
 
         #处理当前帧未被处理的点
@@ -270,12 +283,9 @@ class Multi_Kalman_Tracker():
         self.frame=frame
         self.clusters,self.heights=self.preprocess_clusters(clusters,heights)
         #判断当前是否有轨迹存在
-        if len(self.tracks)==0:
-            self.init_tracks()
-        else:
-            self.predict()
-            self.association()
-            self.update()
+        self.predict()
+        self.association()
+        self.update()
 
     #判断轨迹是否位于边缘
     def is_at_edge(self,s):
