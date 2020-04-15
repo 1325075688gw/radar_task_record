@@ -20,7 +20,7 @@ cluster_show_queue = Queue()
 
 def save_result(save_data):
 	json_str = json.dumps(save_data)
-	with open('./data/output/one_people_updown_v1.json', 'w') as json_file:
+	with open('./data/output/new_points_cart_transfer_5m_v4.json', 'w') as json_file:
 		json_file.write(json_str)
 
 def test_point_filter():
@@ -33,7 +33,7 @@ def test_point_filter():
 	point_num = []
 	while not frame_data_queue.empty():
 		frame_data = frame_data_queue.get()
-		p_filter.run_filter(frame_data)
+		#p_filter.run_filter(frame_data)
 		cl.do_clsuter(frame_data)
 		#cl.show_cluster_dopper()
 		frame_cluster_dict = copy.deepcopy(cl.frame_cluster_dict)
@@ -45,15 +45,8 @@ def test_point_filter():
 			tem_data = [center_point[0],center_point[1],height]
 			out_list.append(tem_data)
 		save_data[cl.frame_cluster_dict['frame_num']] = out_list
-		
 		print("帧号",frame_cluster_dict['frame_num'])
-		if frame_cluster_dict['cluster'] == []:
-			print("点数:",0)
-		else:
-			dist.append(frame_cluster_dict['cluster'][0]['points_num'])
-			point_num.append(frame_cluster_dict['cluster'][0]['center_point'][1])
-			print("点数",frame_cluster_dict['cluster'][0]['points_num'])
-			print("距离y",frame_cluster_dict['cluster'][0]['center_point'][1])
+		
 		#for cluster in frame_cluster_dict['cluster']:
 		#	print("均值",cluster['center_point'][2])
 		#	print("方差",cluster['var_z'])
@@ -62,7 +55,7 @@ def test_point_filter():
 		#print(np.var(all_height))
 		#print(cl.get_cluster_center_point_list())
 		#print(cl.get_height_list())
-	save_result(save_data)
+	#save_result(save_data)
 
 	'''
 	plt.figure()
