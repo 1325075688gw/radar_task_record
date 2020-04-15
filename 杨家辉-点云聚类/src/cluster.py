@@ -138,9 +138,7 @@ class Cluster():
 		for i in tem_dict:
 			center_point = np.mean(tem_dict[i], axis=0)
 			dist = math.sqrt(center_point[0]*center_point[0] + center_point[1]*center_point[1])
-			if dist < 3 and len(tem_dict[i]) < 20:
-				del_list.append(i)
-			elif dist >= 3 and len(tem_dict[i]) < 10:
+			if dist < 7 and len(tem_dict[i]) < (1-dist/7)*self.min_cluster_count:
 				del_list.append(i)
 		for key in del_list:
 			tem_dict.pop(key)		
@@ -148,12 +146,12 @@ class Cluster():
 	def points_to_cluster_by_tag(self, points, tag):
 		tem_dict = self.cluster_by_tag(points, tag)
 		#print(tem_dict)
-		#self.cluster_filter_by_noise(tem_dict)
+		self.cluster_filter_by_noise(tem_dict)
 		#按照点数和dopper对聚类进行分割
 		#self.divide_cluster_by_count_dopper(tem_dict)
 		#过滤
 		#self.cluster_filter_by_count(tem_dict, self.min_cluster_count)
-		#self.cluster_filter_by_count_and_distance(tem_dict)
+		self.cluster_filter_by_count_and_distance(tem_dict)
 		#tem_dict = sorted(tem_dict.items(), key = lambda x : x[0]) #按key排序
 		cluster_list = self.compute_cluster_attr(tem_dict)
 		return cluster_list
