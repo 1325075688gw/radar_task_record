@@ -40,6 +40,12 @@ class Track():
         self.posture.add_posture(posture,velocity)
 
     def get_posture(self,M,rate):
+        if len(self.points)<M+1:
+            return None
+        x=np.array(self.points)[:-M-1,0]
+        y=np.array(self.points)[:-M-1,1]
+        if np.linalg.norm([np.std(x),np.std(y)])>0.5:
+            return 4
         return self.posture.get_posture(M,rate)
 
     def get_location(self,M):
