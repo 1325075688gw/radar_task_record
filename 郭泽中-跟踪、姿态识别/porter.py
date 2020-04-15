@@ -11,11 +11,11 @@ plt.rcParams['axes.unicode_minus']=False
 '''
 test
 '''
-filepath= 'new_points_cart_transfer_5m_v4.json'
+filepath= 'gzz_two_pp_1_2_5_two_left_right.json'
 file=open(filepath)
 data=json.load(file)
 
-tracker=Multi_Kalman_Tracker(0.5,20,50,20,0.5,-3,3,8)
+tracker=Multi_Kalman_Tracker(0.5,20,100,20,0.5,-3,3,8)
 
 
 fig=plt.figure(figsize=(8,8))
@@ -49,7 +49,7 @@ for frame in data:
 
     visual(ax,locations,heights,frame)
 
-    plt.pause(0.001)
+    plt.pause(0.0000001)
     plt.cla()
 
 print(np.mean(all_heights),np.std(all_heights))
